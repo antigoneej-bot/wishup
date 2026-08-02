@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for RevenueCat / Google Play Billing (in-app subscriptions) -->
+    <uses-permission android:name="com.android.vending.BILLING" />
     <application
         android:label="WishUp"
         android:name="${applicationName}"

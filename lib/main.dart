@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/app_state.dart';
 import 'services/storage_service.dart';
 import 'services/notification_service.dart';
+import 'services/purchase_service.dart';
 import 'theme/app_theme.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/main_navigation.dart';
@@ -11,6 +12,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await StorageService.init();
   await NotificationService.init();
+  await PurchaseService.init();
   runApp(const WishUpApp());
 }
 
@@ -61,13 +63,22 @@ class _RootGateState extends State<_RootGate> {
             children: [
               Text('✦', style: TextStyle(fontSize: 40, color: AppColors.navy)),
               SizedBox(height: 12),
-              Text('WishUp', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.navy)),
+              Text(
+                'WishUp',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.navy,
+                ),
+              ),
             ],
           ),
         ),
       );
     }
     final state = context.watch<AppState>();
-    return state.onboardingCompleted ? const MainNavigation() : const OnboardingScreen();
+    return state.onboardingCompleted
+        ? const MainNavigation()
+        : const OnboardingScreen();
   }
 }

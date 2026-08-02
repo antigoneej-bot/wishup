@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/goal.dart';
@@ -11,6 +12,7 @@ import '../services/ai_insight_service.dart';
 import '../services/notification_service.dart';
 import '../services/moon_phase_service.dart';
 import '../services/entitlement_service.dart';
+import '../services/purchase_service.dart';
 import '../widgets/level_badge.dart';
 
 const _uuid = Uuid();
@@ -35,26 +37,47 @@ class AppState extends ChangeNotifier {
 
   Future<void> load() async {
     final settings = StorageService.settings;
-    onboardingCompleted = settings.get('onboardingCompleted', defaultValue: false) as bool;
+    onboardingCompleted =
+        settings.get('onboardingCompleted', defaultValue: false) as bool;
     userName = settings.get('userName', defaultValue: '') as String;
     final areas = settings.get('focusAreas', defaultValue: <String>[]) as List;
     focusAreas = areas
-        .map((a) => GoalCategory.values.firstWhere((c) => c.name == a, orElse: () => GoalCategory.growth))
+        .map(
+          (a) => GoalCategory.values.firstWhere(
+            (c) => c.name == a,
+            orElse: () => GoalCategory.growth,
+          ),
+        )
         .toList();
 
-    goals = StorageService.goals.values.map((m) => Goal.fromMap(m as Map)).toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    habits = StorageService.habits.values.map((m) => Habit.fromMap(m as Map)).toList();
-    journalEntries = StorageService.journal.values.map((m) => JournalEntry.fromMap(m as Map)).toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    visionItems = StorageService.vision.values.map((m) => VisionItem.fromMap(m as Map)).toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    letters = StorageService.letters.values.map((m) => UniverseLetter.fromMap(m as Map)).toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    goals =
+        StorageService.goals.values.map((m) => Goal.fromMap(m as Map)).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    habits = StorageService.habits.values
+        .map((m) => Habit.fromMap(m as Map))
+        .toList();
+    journalEntries =
+        StorageService.journal.values
+            .map((m) => JournalEntry.fromMap(m as Map))
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    visionItems =
+        StorageService.vision.values
+            .map((m) => VisionItem.fromMap(m as Map))
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    letters =
+        StorageService.letters.values
+            .map((m) => UniverseLetter.fromMap(m as Map))
+            .toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-    affirmationNotifEnabled = settings.get('affirmationNotifEnabled', defaultValue: false) as bool;
-    habitNotifEnabled = settings.get('habitNotifEnabled', defaultValue: false) as bool;
-    moonRitualNotifEnabled = settings.get('moonRitualNotifEnabled', defaultValue: false) as bool;
+    affirmationNotifEnabled =
+        settings.get('affirmationNotifEnabled', defaultValue: false) as bool;
+    habitNotifEnabled =
+        settings.get('habitNotifEnabled', defaultValue: false) as bool;
+    moonRitualNotifEnabled =
+        settings.get('moonRitualNotifEnabled', defaultValue: false) as bool;
     scriptingWish = settings.get('scriptingWish', defaultValue: '') as String;
 
     if (moonRitualNotifEnabled) {
@@ -62,15 +85,36 @@ class AppState extends ChangeNotifier {
     }
 
     notifyListeners();
+    // 서버(RevenueCat)의 실제 구독 상태와 로컬 프리미엄 플래그를 동기화.
+    // 결제 SDK 미설정 상태에서는 항상 false를 반환해 안전하게 무시됩니다.
+    unawaited(_syncEntitlementFromStore());
+  }
+
+  /// RevenueCat에 저장된 실제 구독 상태를 조회해 로컬 프리미엄 플래그를 갱신합니다.
+  /// 다른 기기에서 결제했거나, 구독이 만료/취소된 경우를 반영합니다.
+  Future<void> _syncEntitlementFromStore() async {
+    if (!PurchaseService.isConfigured) return;
+    try {
+      final active = await PurchaseService.checkEntitlement();
+      if (active != EntitlementService.isPremium) {
+        await setPremiumStatus(active);
+      }
+    } catch (_) {}
   }
 
   // ---------------- Onboarding ----------------
-  Future<void> completeOnboarding({required String name, required List<GoalCategory> areas}) async {
+  Future<void> completeOnboarding({
+    required String name,
+    required List<GoalCategory> areas,
+  }) async {
     userName = name;
     focusAreas = areas;
     onboardingCompleted = true;
     await StorageService.settings.put('userName', name);
-    await StorageService.settings.put('focusAreas', areas.map((a) => a.name).toList());
+    await StorageService.settings.put(
+      'focusAreas',
+      areas.map((a) => a.name).toList(),
+    );
     await StorageService.settings.put('onboardingCompleted', true);
     notifyListeners();
   }
@@ -102,13 +146,18 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<CelebrationType?> toggleMilestone(String goalId, String milestoneId) async {
+  Future<CelebrationType?> toggleMilestone(
+    String goalId,
+    String milestoneId,
+  ) async {
     final goal = goals.firstWhere((g) => g.id == goalId);
     final m = goal.milestones.firstWhere((m) => m.id == milestoneId);
     final wasComplete = goal.progress >= 1.0;
     m.isDone = !m.isDone;
     if (goal.milestones.isNotEmpty) {
-      goal.progress = goal.milestones.where((m) => m.isDone).length / goal.milestones.length;
+      goal.progress =
+          goal.milestones.where((m) => m.isDone).length /
+          goal.milestones.length;
     }
     await StorageService.goals.put(goal.id, goal.toMap());
     notifyListeners();
@@ -133,7 +182,11 @@ class AppState extends ChangeNotifier {
 
   // ---------------- Habits ----------------
   Future<void> addHabit(String title, {String? linkedGoalId}) async {
-    final habit = Habit(id: _uuid.v4(), title: title, linkedGoalId: linkedGoalId);
+    final habit = Habit(
+      id: _uuid.v4(),
+      title: title,
+      linkedGoalId: linkedGoalId,
+    );
     habits.add(habit);
     await StorageService.habits.put(habit.id, habit.toMap());
     notifyListeners();
@@ -196,10 +249,14 @@ class AppState extends ChangeNotifier {
   /// 오늘 작성된 369 스크립팅 개수 (시간대별)
   int scriptCountToday(ScriptPeriod p) {
     final today = _fmtDate(DateTime.now());
-    return journalEntries.where((e) =>
-        e.type == JournalType.script &&
-        e.period == p.name &&
-        _fmtDate(e.createdAt) == today).length;
+    return journalEntries
+        .where(
+          (e) =>
+              e.type == JournalType.script &&
+              e.period == p.name &&
+              _fmtDate(e.createdAt) == today,
+        )
+        .length;
   }
 
   bool get scriptingAllCompleteToday =>
@@ -218,8 +275,17 @@ class AppState extends ChangeNotifier {
   }
 
   // ---------------- Vision Board ----------------
-  Future<void> addVisionItem({String? imagePath, String caption = '', bool isAssetImage = false}) async {
-    final item = VisionItem(id: _uuid.v4(), imagePath: imagePath, caption: caption, isAssetImage: isAssetImage);
+  Future<void> addVisionItem({
+    String? imagePath,
+    String caption = '',
+    bool isAssetImage = false,
+  }) async {
+    final item = VisionItem(
+      id: _uuid.v4(),
+      imagePath: imagePath,
+      caption: caption,
+      isAssetImage: isAssetImage,
+    );
     visionItems.insert(0, item);
     await StorageService.vision.put(item.id, item.toMap());
     notifyListeners();
@@ -232,8 +298,15 @@ class AppState extends ChangeNotifier {
   }
 
   // ---------------- Universe Letter ----------------
-  Future<void> addLetter({required String content, required DateTime openDate}) async {
-    final letter = UniverseLetter(id: _uuid.v4(), content: content, openDate: openDate);
+  Future<void> addLetter({
+    required String content,
+    required DateTime openDate,
+  }) async {
+    final letter = UniverseLetter(
+      id: _uuid.v4(),
+      content: content,
+      openDate: openDate,
+    );
     letters.insert(0, letter);
     await StorageService.letters.put(letter.id, letter.toMap());
     await NotificationService.scheduleUniverseReply(
@@ -258,7 +331,8 @@ class AppState extends ChangeNotifier {
   }
 
   /// 편지 id를 알림 스케줄용 고유 int id로 변환 (양수로 고정)
-  int _letterNotifId(String letterId) => 20000 + (letterId.hashCode & 0x0FFFFFFF) % 70000;
+  int _letterNotifId(String letterId) =>
+      20000 + (letterId.hashCode & 0x0FFFFFFF) % 70000;
 
   // ---------------- Notification Settings ----------------
   Future<void> setAffirmationNotif(bool enabled) async {
@@ -300,7 +374,9 @@ class AppState extends ChangeNotifier {
 
   Future<void> _rescheduleMoonRitual() async {
     final info = MoonPhaseService.getInfo();
-    final target = info.nextNewMoon.isBefore(info.nextFullMoon) ? info.nextNewMoon : info.nextFullMoon;
+    final target = info.nextNewMoon.isBefore(info.nextFullMoon)
+        ? info.nextNewMoon
+        : info.nextFullMoon;
     final isNew = info.nextNewMoon.isBefore(info.nextFullMoon);
     await NotificationService.scheduleOneOff(
       id: 2001,
@@ -317,8 +393,12 @@ class AppState extends ChangeNotifier {
   // ---------------- Identity Level (누적 포인트, 절대 감소하지 않음) ----------------
   int get totalPoints {
     final journalPts = journalEntries.length * 5;
-    final habitPts = habits.fold<int>(0, (sum, h) => sum + h.completedDates.length) * 3;
-    final goalPts = goals.fold<int>(0, (sum, g) => sum + (g.progress * 100).round());
+    final habitPts =
+        habits.fold<int>(0, (sum, h) => sum + h.completedDates.length) * 3;
+    final goalPts = goals.fold<int>(
+      0,
+      (sum, g) => sum + (g.progress * 100).round(),
+    );
     return journalPts + habitPts + goalPts;
   }
 
@@ -326,18 +406,19 @@ class AppState extends ChangeNotifier {
 
   // ---------------- AI / Derived ----------------
   int get energyScore => AiInsightService.energyScore(
-        goals: goals,
-        habits: habits,
-        journalEntries: journalEntries,
-      );
+    goals: goals,
+    habits: habits,
+    journalEntries: journalEntries,
+  );
 
   AiInsight get todaysInsight => AiInsightService.generate(
-        goals: goals,
-        habits: habits,
-        journalEntries: journalEntries,
-      );
+    goals: goals,
+    habits: habits,
+    journalEntries: journalEntries,
+  );
 
-  GoalCategory? get primaryFocus => focusAreas.isNotEmpty ? focusAreas.first : null;
+  GoalCategory? get primaryFocus =>
+      focusAreas.isNotEmpty ? focusAreas.first : null;
 
   // ---------------- 프리미엄 / 무료 한도 ----------------
   bool get isPremium => EntitlementService.isPremium;
@@ -350,12 +431,18 @@ class AppState extends ChangeNotifier {
 
   bool get canAddGoal => isPremium || goals.length < FreeLimits.maxGoals;
   bool get canAddHabit => isPremium || habits.length < FreeLimits.maxHabits;
-  bool get canAddVisionItem => isPremium || visionItems.length < FreeLimits.maxVisionItems;
+  bool get canAddVisionItem =>
+      isPremium || visionItems.length < FreeLimits.maxVisionItems;
 
   int get lettersThisMonth {
     final now = DateTime.now();
-    return letters.where((l) => l.createdAt.year == now.year && l.createdAt.month == now.month).length;
+    return letters
+        .where(
+          (l) => l.createdAt.year == now.year && l.createdAt.month == now.month,
+        )
+        .length;
   }
 
-  bool get canWriteLetterThisMonth => isPremium || lettersThisMonth < FreeLimits.maxLettersPerMonth;
+  bool get canWriteLetterThisMonth =>
+      isPremium || lettersThisMonth < FreeLimits.maxLettersPerMonth;
 }

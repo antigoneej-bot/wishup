@@ -66,6 +66,9 @@ dependencies:
   # Data backup / restore (local export & import, no cloud account needed)
   file_picker: ^8.1.4
 
+  # In-app purchases / subscriptions (RevenueCat wrapper over Google Play Billing)
+  purchases_flutter: 10.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
