@@ -75,5 +75,15 @@ class RitualAudio {
       category: RitualCategory.frequency,
       isPremium: true,
     ),
+    RitualAudio(
+      id: 'calm_ritual',
+      title: '안정 리추얼',
+      subtitle: '베타 → 알파 → 세타파로 가라앉으며 파도 소리와 함께 긴장과 불안을 내려놓아요',
+      emoji: '😮\u200d💨',
+      assetPath: 'audio/calm_ritual.mp3',
+      durationLabel: '10분',
+      category: RitualCategory.frequency,
+      isPremium: true,
+    ),
   ];
 }
