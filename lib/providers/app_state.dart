@@ -10,6 +10,7 @@ import '../services/storage_service.dart';
 import '../services/ai_insight_service.dart';
 import '../services/notification_service.dart';
 import '../services/moon_phase_service.dart';
+import '../services/entitlement_service.dart';
 import '../widgets/level_badge.dart';
 
 const _uuid = Uuid();
@@ -329,4 +330,24 @@ class AppState extends ChangeNotifier {
       );
 
   GoalCategory? get primaryFocus => focusAreas.isNotEmpty ? focusAreas.first : null;
+
+  // ---------------- 프리미엄 / 무료 한도 ----------------
+  bool get isPremium => EntitlementService.isPremium;
+
+  /// 결제 SDK 연동 후, 구매 성공 콜백에서 호출해 상태를 갱신하는 용도.
+  Future<void> setPremiumStatus(bool value) async {
+    await EntitlementService.setPremium(value);
+    notifyListeners();
+  }
+
+  bool get canAddGoal => isPremium || goals.length < FreeLimits.maxGoals;
+  bool get canAddHabit => isPremium || habits.length < FreeLimits.maxHabits;
+  bool get canAddVisionItem => isPremium || visionItems.length < FreeLimits.maxVisionItems;
+
+  int get lettersThisMonth {
+    final now = DateTime.now();
+    return letters.where((l) => l.createdAt.year == now.year && l.createdAt.month == now.month).length;
+  }
+
+  bool get canWriteLetterThisMonth => isPremium || lettersThisMonth < FreeLimits.maxLettersPerMonth;
 }

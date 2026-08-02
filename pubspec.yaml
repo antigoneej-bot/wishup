@@ -63,6 +63,9 @@ dependencies:
   # Audio playback (ritual audio: visualization / meditation)
   audioplayers: ^6.1.0
 
+  # Data backup / restore (local export & import, no cloud account needed)
+  file_picker: ^8.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

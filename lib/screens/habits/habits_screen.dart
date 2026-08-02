@@ -4,6 +4,9 @@ import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/habit_tile.dart';
 import '../../widgets/celebration_overlay.dart';
+import '../../widgets/free_limit_banner.dart';
+import '../../services/entitlement_service.dart';
+import '../premium/paywall_screen.dart';
 
 class HabitsScreen extends StatelessWidget {
   const HabitsScreen({super.key});
@@ -16,7 +19,7 @@ class HabitsScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('정체성 습관')),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.navy,
-        onPressed: () => _showAddHabit(context),
+        onPressed: () => _handleAddHabit(context),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: SafeArea(
@@ -38,6 +41,14 @@ class HabitsScreen extends StatelessWidget {
                 ],
               ),
             ),
+            if (!state.isPremium && state.habits.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                child: FreeLimitBanner(
+                  text: '습관 ${state.habits.length}/${FreeLimits.maxHabits}개 · 프리미엄으로 무제한 이용하기',
+                  onTap: () => _handleAddHabit(context),
+                ),
+              ),
             Expanded(
               child: state.habits.isEmpty
                   ? const Center(child: Text('아직 습관이 없어요. + 버튼으로 추가해보세요', style: TextStyle(color: AppColors.textSecondary)))
@@ -63,6 +74,22 @@ class HabitsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _handleAddHabit(BuildContext context) {
+    final state = context.read<AppState>();
+    if (!state.canAddHabit) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PaywallScreen(
+            triggerReason: '무료 플랜은 습관을 최대 3개까지 추적할 수 있어요.\n프리미엄으로 습관 개수 제한 없이 관리해보세요.',
+          ),
+        ),
+      );
+      return;
+    }
+    _showAddHabit(context);
   }
 
   void _showAddHabit(BuildContext context) {

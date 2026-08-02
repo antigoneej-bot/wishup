@@ -3,9 +3,28 @@ import 'package:provider/provider.dart';
 import '../../models/universe_letter.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../services/entitlement_service.dart';
+import '../../widgets/free_limit_banner.dart';
+import '../premium/paywall_screen.dart';
 
 class UniverseLetterScreen extends StatelessWidget {
   const UniverseLetterScreen({super.key});
+
+  void _handleWriteLetter(BuildContext context) {
+    final state = context.read<AppState>();
+    if (!state.canWriteLetterThisMonth) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PaywallScreen(
+            triggerReason: '무료 플랜은 우주편지를 한 달에 1개까지 쓸 수 있어요.\n프리미엄으로 원하는 만큼 편지를 남겨보세요.',
+          ),
+        ),
+      );
+      return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const _WriteLetterScreen()));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -15,38 +34,52 @@ class UniverseLetterScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('우주에 편지쓰기')),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.navy,
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _WriteLetterScreen())),
+        onPressed: () => _handleWriteLetter(context),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: SafeArea(
-        child: state.letters.isEmpty
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text('✉️', style: TextStyle(fontSize: 44)),
-                      SizedBox(height: 14),
-                      Text('아직 보낸 편지가 없어요', style: TextStyle(fontWeight: FontWeight.w700)),
-                      SizedBox(height: 6),
-                      Text(
-                        '이미 이루어진 미래의 나에게\n또는 우주에게 편지를 써보세요.\n정해진 날짜가 되면 열어볼 수 있어요.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.5),
-                      ),
-                    ],
-                  ),
+        child: Column(
+          children: [
+            if (!state.isPremium)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: FreeLimitBanner(
+                  text: '이번 달 편지 ${state.lettersThisMonth}/${FreeLimits.maxLettersPerMonth}개 · 프리미엄으로 무제한 작성하기',
+                  onTap: () => _handleWriteLetter(context),
                 ),
-              )
-            : ListView.builder(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
-                itemCount: state.letters.length,
-                itemBuilder: (context, i) {
-                  final l = state.letters[i];
-                  return _LetterCard(letter: l);
-                },
               ),
+            Expanded(
+              child: state.letters.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Text('✉️', style: TextStyle(fontSize: 44)),
+                            SizedBox(height: 14),
+                            Text('아직 보낸 편지가 없어요', style: TextStyle(fontWeight: FontWeight.w700)),
+                            SizedBox(height: 6),
+                            Text(
+                              '이미 이루어진 미래의 나에게\n또는 우주에게 편지를 써보세요.\n정해진 날짜가 되면 열어볼 수 있어요.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5, height: 1.5),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                      itemCount: state.letters.length,
+                      itemBuilder: (context, i) {
+                        final l = state.letters[i];
+                        return _LetterCard(letter: l);
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

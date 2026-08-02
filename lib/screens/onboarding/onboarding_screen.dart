@@ -108,13 +108,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           const Text('WishUp', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           const Text(
-            '위시업은 확언을 반복하는 앱이 아니에요.\n당신의 감정, 습관, 무의식을 함께 바꿔\n실제 현실의 변화를 만드는\nAI 기반 현실 창조 플랫폼입니다.',
+            '위시업은 확언을 반복하는 앱이 아니에요.\n당신의 감정, 습관, 무의식을 함께 바꿔\n실제 현실의 변화를 만드는\n끌어당김 실천 플랫폼입니다.',
             style: TextStyle(fontSize: 15.5, height: 1.6, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 20),
           _bullet('🧠', '무의식을 재프로그래밍하는 확언 & 정체성 선언'),
           _bullet('🔁', '행동과학 기반 습관으로 목표를 증명'),
-          _bullet('📊', 'AI가 감정·행동 패턴을 분석해 인사이트 제공'),
+          _bullet('📊', '감정·행동 패턴을 분석하는 스마트 인사이트 제공'),
         ],
       ),
     );

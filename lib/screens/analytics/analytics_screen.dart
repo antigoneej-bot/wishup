@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../premium/paywall_screen.dart';
 
 class AnalyticsScreen extends StatelessWidget {
   const AnalyticsScreen({super.key});
@@ -41,7 +42,9 @@ class AnalyticsScreen extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 60),
           children: [
             _summaryRow(state),
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
+            if (!state.isPremium) _premiumBanner(context),
+            const SizedBox(height: 8),
 
             const Text('최근 14일 감정 흐름', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
             const SizedBox(height: 4),
@@ -126,6 +129,39 @@ class AnalyticsScreen extends StatelessWidget {
                       ],
                     ),
                   )),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _premiumBanner(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PaywallScreen(
+            triggerReason: '목표·습관을 더 많이 기록할수록 인사이트가 더 깊어져요.\n프리미엄으로 제한 없이 기록해보세요.',
+          ),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.navyDark,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.workspace_premium_outlined, color: AppColors.gold, size: 20),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                '기록이 쌓일수록 분석이 정교해져요. 프리미엄으로 목표·습관 제한 없이 기록해보세요.',
+                style: TextStyle(color: Colors.white, fontSize: 12, height: 1.4),
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white70, size: 18),
           ],
         ),
       ),

@@ -4,9 +4,62 @@ import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../../services/entitlement_service.dart';
+import '../../widgets/free_limit_banner.dart';
+import '../premium/paywall_screen.dart';
 
 class VisionBoardScreen extends StatelessWidget {
   const VisionBoardScreen({super.key});
+
+  void _handleAddPressed(BuildContext context) {
+    final state = context.read<AppState>();
+    if (!state.canAddVisionItem) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PaywallScreen(
+            triggerReason: '무료 플랜은 비전보드 카드를 최대 5개까지 만들 수 있어요.\n프리미엄으로 제한 없이 채워보세요.',
+          ),
+        ),
+      );
+      return;
+    }
+    _showAddSheet(context);
+  }
+
+  void _showAddSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.image_outlined, color: AppColors.navy),
+                title: const Text('이미지 추가'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickImage(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.text_fields, color: AppColors.navy),
+                title: const Text('텍스트 비전 카드 추가'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showTextOnlyDialog(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Future<void> _pickImage(BuildContext context) async {
     final picker = ImagePicker();
@@ -53,57 +106,38 @@ class VisionBoardScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('비전보드')),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.navy,
-        onPressed: () => showModalBottomSheet(
-          context: context,
-          backgroundColor: AppColors.surface,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-          builder: (ctx) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.image_outlined, color: AppColors.navy),
-                    title: const Text('이미지 추가'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _pickImage(context);
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.text_fields, color: AppColors.navy),
-                    title: const Text('텍스트 비전 카드 추가'),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _showTextOnlyDialog(context);
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        onPressed: () => _handleAddPressed(context),
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: SafeArea(
-        child: state.visionItems.isEmpty
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Text('🖼', style: TextStyle(fontSize: 44)),
-                      SizedBox(height: 14),
-                      Text('비전보드가 비어있어요', style: TextStyle(fontWeight: FontWeight.w700)),
-                      SizedBox(height: 6),
-                      Text('이미 이루어진 모습을 이미지나 글로 채워보세요', style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5), textAlign: TextAlign.center),
-                    ],
-                  ),
+        child: Column(
+          children: [
+            if (!state.isPremium && state.visionItems.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: FreeLimitBanner(
+                  text: '비전보드 ${state.visionItems.length}/${FreeLimits.maxVisionItems}개 · 프리미엄으로 무제한 이용하기',
+                  onTap: () => _handleAddPressed(context),
                 ),
-              )
-            : GridView.builder(
+              ),
+            Expanded(
+              child: state.visionItems.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Text('🖼', style: TextStyle(fontSize: 44)),
+                            SizedBox(height: 14),
+                            Text('비전보드가 비어있어요', style: TextStyle(fontWeight: FontWeight.w700)),
+                            SizedBox(height: 6),
+                            Text('이미 이루어진 모습을 이미지나 글로 채워보세요', style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5), textAlign: TextAlign.center),
+                          ],
+                        ),
+                      ),
+                    )
+                  : GridView.builder(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
@@ -142,6 +176,9 @@ class VisionBoardScreen extends StatelessWidget {
                   );
                 },
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

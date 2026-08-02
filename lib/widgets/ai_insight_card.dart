@@ -35,7 +35,7 @@ class AiInsightCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               const Text(
-                'AI 인사이트',
+                '스마트 인사이트',
                 style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600),
               ),
             ],
