@@ -218,8 +218,8 @@ class AppState extends ChangeNotifier {
   }
 
   // ---------------- Vision Board ----------------
-  Future<void> addVisionItem({String? imagePath, String caption = ''}) async {
-    final item = VisionItem(id: _uuid.v4(), imagePath: imagePath, caption: caption);
+  Future<void> addVisionItem({String? imagePath, String caption = '', bool isAssetImage = false}) async {
+    final item = VisionItem(id: _uuid.v4(), imagePath: imagePath, caption: caption, isAssetImage: isAssetImage);
     visionItems.insert(0, item);
     await StorageService.vision.put(item.id, item.toMap());
     notifyListeners();
@@ -236,6 +236,10 @@ class AppState extends ChangeNotifier {
     final letter = UniverseLetter(id: _uuid.v4(), content: content, openDate: openDate);
     letters.insert(0, letter);
     await StorageService.letters.put(letter.id, letter.toMap());
+    await NotificationService.scheduleUniverseReply(
+      id: _letterNotifId(letter.id),
+      dateTime: openDate,
+    );
     notifyListeners();
   }
 
@@ -249,8 +253,12 @@ class AppState extends ChangeNotifier {
   Future<void> deleteLetter(String id) async {
     letters.removeWhere((l) => l.id == id);
     await StorageService.letters.delete(id);
+    await NotificationService.cancelOneOff(_letterNotifId(id));
     notifyListeners();
   }
+
+  /// 편지 id를 알림 스케줄용 고유 int id로 변환 (양수로 고정)
+  int _letterNotifId(String letterId) => 20000 + (letterId.hashCode & 0x0FFFFFFF) % 70000;
 
   // ---------------- Notification Settings ----------------
   Future<void> setAffirmationNotif(bool enabled) async {

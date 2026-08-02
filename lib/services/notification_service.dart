@@ -160,6 +160,38 @@ class NotificationService {
     } catch (_) {}
   }
 
+  /// 우주에 편지쓰기 - 답장 도착 알림 (커스텀 "띵동" 사운드 포함)
+  static Future<void> scheduleUniverseReply({
+    required int id,
+    required DateTime dateTime,
+  }) async {
+    if (kIsWeb) return;
+    if (dateTime.isBefore(DateTime.now())) return;
+    try {
+      final tzTime = tz.TZDateTime.from(dateTime, tz.local);
+      await _plugin.zonedSchedule(
+        id,
+        '💌 우주로부터 답장이 도착했어요',
+        '당신이 보낸 소원에 대한 답장을 확인해보세요.',
+        tzTime,
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'universe_reply',
+            '우주편지 답장 알림',
+            channelDescription: '우주에 보낸 편지의 답장이 도착했을 때 알려드려요',
+            importance: Importance.high,
+            priority: Priority.high,
+            sound: RawResourceAndroidNotificationSound('ding_dong'),
+            playSound: true,
+          ),
+          iOS: DarwinNotificationDetails(sound: 'ding_dong.mp3'),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (_) {}
+  }
+
   static Future<void> showTestNotification() async {
     if (kIsWeb) return;
     try {

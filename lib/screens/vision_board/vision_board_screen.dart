@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../models/vision_item.dart';
 import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
 import '../../services/entitlement_service.dart';
@@ -47,11 +48,95 @@ class VisionBoardScreen extends StatelessWidget {
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.auto_awesome, color: AppColors.gold),
+                title: const Text('예시 이미지로 추가'),
+                subtitle: const Text('풍요·건강·커리어·사랑 카테고리 이미지', style: TextStyle(fontSize: 11.5)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _showExampleSheet(context);
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.text_fields, color: AppColors.navy),
                 title: const Text('텍스트 비전 카드 추가'),
                 onTap: () {
                   Navigator.pop(ctx);
                   _showTextOnlyDialog(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showExampleSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('예시 이미지 선택', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              const SizedBox(height: 4),
+              const Text('원하는 카테고리를 눌러 비전보드에 추가해보세요', style: TextStyle(color: AppColors.textSecondary, fontSize: 12.5)),
+              const SizedBox(height: 16),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: VisionExample.all.length,
+                itemBuilder: (context, i) {
+                  final ex = VisionExample.all[i];
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      context.read<AppState>().addVisionItem(
+                            imagePath: ex.assetPath,
+                            caption: ex.caption,
+                            isAssetImage: true,
+                          );
+                    },
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Image.asset(ex.assetPath, fit: BoxFit.cover),
+                          Positioned(
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(10, 20, 10, 10),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [Colors.transparent, Colors.black.withValues(alpha: 0.65)],
+                                ),
+                              ),
+                              child: Text(
+                                '${ex.emoji} ${ex.category}',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12.5),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
                 },
               ),
             ],
@@ -155,7 +240,12 @@ class VisionBoardScreen extends StatelessWidget {
                         color: AppColors.beige,
                         borderRadius: BorderRadius.circular(16),
                         image: v.imagePath != null
-                            ? DecorationImage(image: FileImage(File(v.imagePath!)), fit: BoxFit.cover)
+                            ? DecorationImage(
+                                image: v.isAssetImage
+                                    ? AssetImage(v.imagePath!) as ImageProvider
+                                    : FileImage(File(v.imagePath!)),
+                                fit: BoxFit.cover,
+                              )
                             : null,
                       ),
                       padding: const EdgeInsets.all(12),
