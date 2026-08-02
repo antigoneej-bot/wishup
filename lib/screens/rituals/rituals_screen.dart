@@ -6,13 +6,15 @@ import '../../theme/app_theme.dart';
 import '../premium/paywall_screen.dart';
 import 'ritual_player_screen.dart';
 
-/// 리츄얼 오디오 목록 (시각화 / 명상 가이드)
+/// 리츄얼 오디오 목록 (시각화 / 명상 가이드 / 프리퀀시 시리즈)
 class RitualsScreen extends StatelessWidget {
   const RitualsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final isPremium = context.watch<AppState>().isPremium;
+    final basics = RitualAudio.all.where((r) => r.category == RitualCategory.basic).toList();
+    final frequency = RitualAudio.all.where((r) => r.category == RitualCategory.frequency).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -24,8 +26,19 @@ class RitualsScreen extends StatelessWidget {
             const Text('무의식에 새기는 시간', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
             const SizedBox(height: 4),
             const Text('눈을 감고, 목소리를 따라가보세요', style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary)),
+            const SizedBox(height: 24),
+
+            _sectionHeader('베이직 리추얼', '언제든 무료로 이용할 수 있는 짧은 데일리 가이드'),
+            const SizedBox(height: 12),
+            ...basics.map((r) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _ritualCard(context, r, isPremium),
+                )),
+
             const SizedBox(height: 20),
-            ...RitualAudio.all.map((r) => Padding(
+            _frequencyHeader(),
+            const SizedBox(height: 12),
+            ...frequency.map((r) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: _ritualCard(context, r, isPremium),
                 )),
@@ -35,12 +48,58 @@ class RitualsScreen extends StatelessWidget {
     );
   }
 
+  Widget _sectionHeader(String title, String subtitle) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5, color: AppColors.navy)),
+        const SizedBox(height: 2),
+        Text(subtitle, style: const TextStyle(fontSize: 11.5, color: AppColors.textSecondary)),
+      ],
+    );
+  }
+
+  Widget _frequencyHeader() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text('🎧 프리퀀시 리추얼',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5, color: AppColors.navy)),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                    ),
+                    child: const Text('PREMIUM',
+                        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.navy, letterSpacing: 0.3)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              const Text('뇌파 유도음이 함께하는 목적별 시리즈 · 매달 새로운 트랙이 추가돼요',
+                  style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   void _handleTap(BuildContext context, RitualAudio r, bool isPremium) {
     if (r.isPremium && !isPremium) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => const PaywallScreen(triggerReason: '수면 시각화 뇌파 유도 오디오는 프리미엄 멤버십 전용 콘텐츠예요.'),
+          builder: (_) => PaywallScreen(triggerReason: '${r.title}은 프리퀀시 리추얼 — 프리미엄 멤버십 전용 콘텐츠예요.'),
         ),
       );
       return;
@@ -76,27 +135,7 @@ class RitualsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(r.title,
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5), overflow: TextOverflow.ellipsis),
-                      ),
-                      if (r.isPremium) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.gold.withValues(alpha: 0.16),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
-                          ),
-                          child: const Text('PREMIUM',
-                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.navy, letterSpacing: 0.3)),
-                        ),
-                      ],
-                    ],
-                  ),
+                  Text(r.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5), overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
                   Text(r.subtitle,
                       style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
