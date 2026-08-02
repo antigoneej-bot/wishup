@@ -20,6 +20,9 @@ import '../journal/scripting_screen.dart';
 import '../../widgets/celebration_overlay.dart';
 import '../../widgets/affirmation_share_card.dart';
 import '../../services/share_service.dart';
+import '../../models/ritual_audio.dart';
+import '../rituals/rituals_screen.dart';
+import '../rituals/ritual_player_screen.dart';
 
 class HomeDashboardScreen extends StatelessWidget {
   const HomeDashboardScreen({super.key});
@@ -147,6 +150,53 @@ class HomeDashboardScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 28),
+
+              // 리츄얼 오디오
+              SectionHeader(
+                title: '🎧 리츄얼 오디오',
+                actionLabel: '더보기',
+                onAction: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RitualsScreen())),
+              ),
+              SizedBox(
+                height: 96,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: RitualAudio.all
+                      .map((r) => Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: GestureDetector(
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RitualPlayerScreen(ritual: r))),
+                              child: Container(
+                                width: 220,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: AppColors.navy.withValues(alpha: 0.06),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Text(r.emoji, style: const TextStyle(fontSize: 28)),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(r.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                                          const SizedBox(height: 2),
+                                          Text(r.durationLabel, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                                        ],
+                                      ),
+                                    ),
+                                    const Icon(Icons.play_circle_fill, color: AppColors.navy, size: 26),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 24),
 
               // 목표
               SectionHeader(

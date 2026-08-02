@@ -9,6 +9,7 @@ import '../affirmations/affirmations_screen.dart';
 import '../analytics/analytics_screen.dart';
 import '../universe_letter/universe_letter_screen.dart';
 import '../settings/settings_screen.dart';
+import '../rituals/rituals_screen.dart';
 import '../../widgets/level_badge.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -80,6 +81,7 @@ class ProfileScreen extends StatelessWidget {
             _menuTile(context, Icons.check_circle_outline, '정체성 습관', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HabitsScreen()))),
             _menuTile(context, Icons.auto_awesome_outlined, '확언 라이브러리', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AffirmationsScreen()))),
             _menuTile(context, Icons.insights_outlined, '현실화 분석', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AnalyticsScreen()))),
+            _menuTile(context, Icons.headphones_outlined, '리츄얼 오디오', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RitualsScreen()))),
             _menuTile(context, Icons.mail_outline, '우주에 편지쓰기', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UniverseLetterScreen()))),
             _menuTile(context, Icons.settings_outlined, '설정', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()))),
           ],
