@@ -114,6 +114,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.build_circle_outlined, color: Colors.orange, size: 20),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      '🔧 (개발용) 결제 연동 전 테스트를 위한 임시 프리미엄 전환 스위치예요.\n실제 출시 시 이 항목은 제거됩니다.',
+                      style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.4),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Switch(
+                    value: state.isPremium,
+                    activeThumbColor: AppColors.gold,
+                    onChanged: (v) => context.read<AppState>().setPremiumStatus(v),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 28),
 
             const Text('알림', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),

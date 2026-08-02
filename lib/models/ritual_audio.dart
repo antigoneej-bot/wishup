@@ -7,6 +7,9 @@ class RitualAudio {
   final String assetPath;
   final String durationLabel;
 
+  /// true면 프리미엄 멤버십 전용 콘텐츠(무료 이용자는 잠금 화면 → 결제 유도)
+  final bool isPremium;
+
   const RitualAudio({
     required this.id,
     required this.title,
@@ -14,6 +17,7 @@ class RitualAudio {
     required this.emoji,
     required this.assetPath,
     required this.durationLabel,
+    this.isPremium = false,
   });
 
   static const List<RitualAudio> all = [
@@ -32,6 +36,15 @@ class RitualAudio {
       emoji: '🧘',
       assetPath: 'audio/meditation_guide.mp3',
       durationLabel: '2분 33초',
+    ),
+    RitualAudio(
+      id: 'sleep_visualization',
+      title: '수면 시각화 (뇌파 유도)',
+      subtitle: '알파 → 세타 → 델타파로 이어지는 뇌파 유도음과 속삭이는 시각화 내레이션으로 깊은 잠에 들어요',
+      emoji: '🌙',
+      assetPath: 'audio/sleep_visualization_brainwave.mp3',
+      durationLabel: '11분 40초',
+      isPremium: true,
     ),
   ];
 }

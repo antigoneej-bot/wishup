@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/ritual_audio.dart';
+import '../../providers/app_state.dart';
 import '../../theme/app_theme.dart';
+import '../premium/paywall_screen.dart';
 import 'ritual_player_screen.dart';
 
 /// 리츄얼 오디오 목록 (시각화 / 명상 가이드)
@@ -9,6 +12,8 @@ class RitualsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isPremium = context.watch<AppState>().isPremium;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('리츄얼 오디오')),
@@ -22,7 +27,7 @@ class RitualsScreen extends StatelessWidget {
             const SizedBox(height: 20),
             ...RitualAudio.all.map((r) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: _ritualCard(context, r),
+                  child: _ritualCard(context, r, isPremium),
                 )),
           ],
         ),
@@ -30,15 +35,32 @@ class RitualsScreen extends StatelessWidget {
     );
   }
 
-  Widget _ritualCard(BuildContext context, RitualAudio r) {
+  void _handleTap(BuildContext context, RitualAudio r, bool isPremium) {
+    if (r.isPremium && !isPremium) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const PaywallScreen(triggerReason: '수면 시각화 뇌파 유도 오디오는 프리미엄 멤버십 전용 콘텐츠예요.'),
+        ),
+      );
+      return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (_) => RitualPlayerScreen(ritual: r)));
+  }
+
+  Widget _ritualCard(BuildContext context, RitualAudio r, bool isPremium) {
+    final locked = r.isPremium && !isPremium;
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => RitualPlayerScreen(ritual: r))),
+      onTap: () => _handleTap(context, r, isPremium),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+          border: Border.all(
+            color: locked ? AppColors.gold.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.06),
+            width: locked ? 1.2 : 1,
+          ),
         ),
         child: Row(
           children: [
@@ -54,7 +76,27 @@ class RitualsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(r.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5)),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(r.title,
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14.5), overflow: TextOverflow.ellipsis),
+                      ),
+                      if (r.isPremium) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                          ),
+                          child: const Text('PREMIUM',
+                              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: AppColors.navy, letterSpacing: 0.3)),
+                        ),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 4),
                   Text(r.subtitle,
                       style: const TextStyle(fontSize: 12, color: AppColors.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
@@ -64,7 +106,11 @@ class RitualsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 6),
-            const Icon(Icons.play_circle_fill, color: AppColors.navy, size: 32),
+            Icon(
+              locked ? Icons.lock_rounded : Icons.play_circle_fill,
+              color: locked ? AppColors.gold : AppColors.navy,
+              size: locked ? 26 : 32,
+            ),
           ],
         ),
       ),
