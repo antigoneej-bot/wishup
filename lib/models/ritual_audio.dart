@@ -95,5 +95,15 @@ class RitualAudio {
       category: RitualCategory.frequency,
       isPremium: true,
     ),
+    RitualAudio(
+      id: 'creative_ritual',
+      title: '크리에이티브 리추얼',
+      subtitle: '알파-세타 경계의 뇌파와 윈드차임 소리로 자유로운 상상력과 아이디어를 열어줘요',
+      emoji: '🎨',
+      assetPath: 'audio/creative_ritual.mp3',
+      durationLabel: '15분',
+      category: RitualCategory.frequency,
+      isPremium: true,
+    ),
   ];
 }
