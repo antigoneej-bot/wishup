@@ -65,5 +65,15 @@ class RitualAudio {
       category: RitualCategory.frequency,
       isPremium: true,
     ),
+    RitualAudio(
+      id: 'focus_ritual',
+      title: '집중 리추얼',
+      subtitle: '알파 → 베타파로 전환되는 뇌파 유도음과 카페 앰비언스로 딥워크 몰입을 도와요',
+      emoji: '🎯',
+      assetPath: 'audio/focus_ritual.mp3',
+      durationLabel: '25분',
+      category: RitualCategory.frequency,
+      isPremium: true,
+    ),
   ];
 }
