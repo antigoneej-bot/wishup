@@ -105,5 +105,37 @@ class RitualAudio {
       category: RitualCategory.frequency,
       isPremium: true,
     ),
+
+    // ── 🌙 시즌 스페셜 리추얼 (프리미엄, 달의 주기 & 새해) ──
+    RitualAudio(
+      id: 'newmoon_ritual',
+      title: '신월 리추얼',
+      subtitle: '알파 → 세타파로 가라앉으며 새로운 의도를 무의식 깊은 곳에 심는 신월의 밤',
+      emoji: '🌑',
+      assetPath: 'audio/newmoon_ritual.mp3',
+      durationLabel: '15분',
+      category: RitualCategory.frequency,
+      isPremium: true,
+    ),
+    RitualAudio(
+      id: 'fullmoon_ritual',
+      title: '보름 리추얼',
+      subtitle: '알파 → 세타 → 알파파로 이어지며 필요 없는 것을 내려놓고 감사로 채우는 보름의 밤',
+      emoji: '🌕',
+      assetPath: 'audio/fullmoon_ritual.mp3',
+      durationLabel: '20분',
+      category: RitualCategory.frequency,
+      isPremium: true,
+    ),
+    RitualAudio(
+      id: 'newyear_ritual',
+      title: '새해 리추얼',
+      subtitle: '베타 → 알파파로 전환되며 지난 해를 돌아보고 새해의 목표를 생생하게 심는 리추얼',
+      emoji: '🎊',
+      assetPath: 'audio/newyear_ritual.mp3',
+      durationLabel: '25분',
+      category: RitualCategory.frequency,
+      isPremium: true,
+    ),
   ];
 }
