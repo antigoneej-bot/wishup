@@ -85,5 +85,15 @@ class RitualAudio {
       category: RitualCategory.frequency,
       isPremium: true,
     ),
+    RitualAudio(
+      id: 'powernap_ritual',
+      title: '파워냅 리추얼',
+      subtitle: '알파 → 세타 → 알파파로 이어지는 20분 낮잠, 깊은 수면 없이 개운하게 깨어나요',
+      emoji: '😴',
+      assetPath: 'audio/powernap_ritual.mp3',
+      durationLabel: '20분',
+      category: RitualCategory.frequency,
+      isPremium: true,
+    ),
   ];
 }
