@@ -17,6 +17,11 @@ import '../widgets/level_badge.dart';
 
 const _uuid = Uuid();
 
+/// 스토어 스크린샷 촬영 등 데모 목적일 때만 활성화되는 샘플 데이터 시드 플래그.
+/// 빌드 시 --dart-define=SEED_DEMO=true 를 명시적으로 넘기지 않으면 항상 false이며,
+/// 일반 프로덕션 빌드에는 절대 영향을 주지 않습니다.
+const bool kSeedDemoData = bool.fromEnvironment('SEED_DEMO', defaultValue: false);
+
 /// 앱 전역 상태 관리 (Provider)
 /// 모든 데이터 CRUD + 파생 데이터(에너지 스코어, AI 인사이트) 계산
 class AppState extends ChangeNotifier {
@@ -117,6 +122,182 @@ class AppState extends ChangeNotifier {
     );
     await StorageService.settings.put('onboardingCompleted', true);
     notifyListeners();
+    if (kSeedDemoData) {
+      await seedDemoDataIfNeeded();
+    }
+  }
+
+  /// 스토어 스크린샷 촬영용 샘플 데이터 주입.
+  /// kSeedDemoData 빌드 플래그가 켜져 있고 아직 아무 데이터도 없을 때만 동작합니다.
+  Future<void> seedDemoDataIfNeeded() async {
+    if (!kSeedDemoData) return;
+    if (goals.isNotEmpty || habits.isNotEmpty) return;
+
+    final now = DateTime.now();
+
+    final demoGoals = [
+      Goal(
+        id: _uuid.v4(),
+        title: '이상적인 몸과 에너지 만들기',
+        identityStatement: '나는 매일 활력 넘치는 건강한 사람이다',
+        category: GoalCategory.health,
+        progress: 0.65,
+        targetDate: now.add(const Duration(days: 60)),
+        milestones: [
+          Milestone(id: _uuid.v4(), title: '주 3회 운동 루틴 만들기', isDone: true),
+          Milestone(id: _uuid.v4(), title: '식단 기록 앱 사용하기', isDone: true),
+          Milestone(id: _uuid.v4(), title: '체지방률 목표 도달', isDone: false),
+        ],
+      ),
+      Goal(
+        id: _uuid.v4(),
+        title: '월 1,000만원 파이프라인 만들기',
+        identityStatement: '나는 풍요와 기회를 끌어당기는 사람이다',
+        category: GoalCategory.wealth,
+        progress: 0.4,
+        targetDate: now.add(const Duration(days: 180)),
+        milestones: [
+          Milestone(id: _uuid.v4(), title: '사이드 프로젝트 런칭', isDone: true),
+          Milestone(id: _uuid.v4(), title: '첫 매출 발생', isDone: false),
+        ],
+      ),
+      Goal(
+        id: _uuid.v4(),
+        title: '평생 함께할 인연 만나기',
+        identityStatement: '나는 사랑받고 사랑을 주는 사람이다',
+        category: GoalCategory.love,
+        progress: 0.8,
+        milestones: [
+          Milestone(id: _uuid.v4(), title: '나를 먼저 사랑하기 연습', isDone: true),
+          Milestone(id: _uuid.v4(), title: '새로운 인연 시도해보기', isDone: true),
+        ],
+      ),
+    ];
+    for (final g in demoGoals) {
+      await StorageService.goals.put(g.id, g.toMap());
+    }
+    goals = demoGoals;
+
+    final demoHabits = [
+      Habit(
+        id: _uuid.v4(),
+        title: '아침 확언 외치기',
+        streak: 12,
+        completedDates: _lastNDays(12),
+        linkedGoalId: demoGoals[0].id,
+      ),
+      Habit(
+        id: _uuid.v4(),
+        title: '감사 일기 쓰기',
+        streak: 7,
+        completedDates: _lastNDays(7),
+      ),
+      Habit(
+        id: _uuid.v4(),
+        title: '시각화 명상 5분',
+        streak: 3,
+        completedDates: _lastNDays(3),
+        linkedGoalId: demoGoals[2].id,
+      ),
+    ];
+    for (final h in demoHabits) {
+      await StorageService.habits.put(h.id, h.toMap());
+    }
+    habits = demoHabits;
+
+    final demoJournal = [
+      JournalEntry(
+        id: _uuid.v4(),
+        type: JournalType.gratitude,
+        content: '오늘 아침 따뜻한 햇살과 맛있는 커피 한 잔에 감사해요.',
+        moodScore: 5,
+        createdAt: now.subtract(const Duration(minutes: 40)),
+      ),
+      JournalEntry(
+        id: _uuid.v4(),
+        type: JournalType.evidence,
+        content: '우연히 예전에 꿈꾸던 회사에서 채용 제안 메일이 왔어요. 우주가 응답하고 있어요!',
+        moodScore: 5,
+        linkedGoalId: demoGoals[1].id,
+        createdAt: now.subtract(const Duration(minutes: 90)),
+      ),
+      JournalEntry(
+        id: _uuid.v4(),
+        type: JournalType.script,
+        content: '나는 이미 원하는 삶을 살고 있다',
+        period: ScriptPeriod.morning.name,
+        createdAt: now.subtract(const Duration(minutes: 100)),
+      ),
+      JournalEntry(
+        id: _uuid.v4(),
+        type: JournalType.script,
+        content: '나는 이미 원하는 삶을 살고 있다',
+        period: ScriptPeriod.morning.name,
+        createdAt: now.subtract(const Duration(minutes: 105)),
+      ),
+      JournalEntry(
+        id: _uuid.v4(),
+        type: JournalType.script,
+        content: '나는 이미 원하는 삶을 살고 있다',
+        period: ScriptPeriod.morning.name,
+        createdAt: now.subtract(const Duration(minutes: 110)),
+      ),
+      JournalEntry(
+        id: _uuid.v4(),
+        type: JournalType.moodOnly,
+        content: '오늘은 컨디션이 아주 좋아요',
+        moodScore: 4,
+        createdAt: now.subtract(const Duration(minutes: 200)),
+      ),
+    ];
+    for (final j in demoJournal) {
+      await StorageService.journal.put(j.id, j.toMap());
+    }
+    journalEntries = demoJournal;
+    scriptingWish = '나는 이미 원하는 삶을 살고 있다';
+    await StorageService.settings.put('scriptingWish', scriptingWish);
+
+    final demoVision = [
+      VisionItem(
+        id: _uuid.v4(),
+        imagePath: 'assets/images/vision_examples/wealth.jpg',
+        caption: '풍요로운 나의 삶',
+        isAssetImage: true,
+      ),
+      VisionItem(
+        id: _uuid.v4(),
+        imagePath: 'assets/images/vision_examples/career.jpg',
+        caption: '성취를 이룬 나의 커리어',
+        isAssetImage: true,
+      ),
+      VisionItem(
+        id: _uuid.v4(),
+        imagePath: 'assets/images/vision_examples/love.jpg',
+        caption: '사랑으로 충만한 관계',
+        isAssetImage: true,
+      ),
+    ];
+    for (final v in demoVision) {
+      await StorageService.vision.put(v.id, v.toMap());
+    }
+    visionItems = demoVision;
+
+    final demoLetter = UniverseLetter(
+      id: _uuid.v4(),
+      content: '나는 이미 꿈꾸던 삶을 살고 있고, 모든 것이 완벽한 타이밍에 이루어지고 있다.',
+      createdAt: now.subtract(const Duration(days: 5)),
+      openDate: now.subtract(const Duration(days: 1)),
+      isRead: false,
+    );
+    await StorageService.letters.put(demoLetter.id, demoLetter.toMap());
+    letters = [demoLetter];
+
+    notifyListeners();
+  }
+
+  List<String> _lastNDays(int n) {
+    final today = DateTime.now();
+    return List.generate(n, (i) => _fmtDate(today.subtract(Duration(days: i))));
   }
 
   // ---------------- Goals ----------------
