@@ -1,19 +1,43 @@
 /// 결제 플랜 정의 및 RevenueCat(Google Play Billing) 연동 처리.
 ///
-/// ⚠️ 실제 결제가 동작하려면 아래 두 가지 설정이 반드시 필요합니다.
-///   1) Google Play Console → 수익 창출 → 상품 → 구독에서 아래와 동일한
-///      상품 ID로 구독 상품 2개를 등록:
-///        - wishup_premium_monthly (월간)
-///        - wishup_premium_yearly  (연간)
-///   2) RevenueCat(https://app.revenuecat.com) 계정 생성 후:
-///        - Project 생성 → Apps → Google Play Store 앱 연결(패키지명: com.wishup.goals)
-///        - 발급된 "Public Google Play API key" (goog_로 시작)를 [_androidApiKey]에 입력
-///        - Product catalog → Entitlements에서 "premium" 식별자로 Entitlement 생성
-///        - 위 2개 구독 상품을 가져와 "premium" Entitlement에 연결(Attach)
-///        - Offerings에서 "default" Offering을 만들고 두 상품을 Package로 추가
+/// ⚠️ 실제 결제가 동작하려면 아래 설정이 반드시 필요합니다 (2026년 기준 RevenueCat
+/// 대시보드 플로우 — docs.revenuecat.com 기준으로 검증됨).
+///
+///   1) Google Play Console (https://play.google.com/console)
+///      - 개발자 계정 등록 (최초 1회, $25 등록비) 및 앱 생성 (패키지명: com.wishup.goals)
+///      - 서명된 AAB를 내부 테스트(Internal testing) 트랙에 최소 1회 업로드
+///        (구독 상품을 만들려면 앱이 최소 한 번 업로드되어 있어야 함)
+///      - 수익 창출 → 상품 → 구독 메뉴에서 아래와 동일한 ID로 구독 상품 2개 등록:
+///          - wishup_premium_monthly (월간)
+///          - wishup_premium_yearly  (연간)
+///
+///   2) RevenueCat (https://app.revenuecat.com) — 계정 생성 후:
+///      a. Project 생성 → Apps → "+ New" → Google Play Store 선택
+///         → App name / Package name(com.wishup.goals) 입력
+///      b. **Service Credentials(중요, 신규 필수 단계)**: Google Play와의 실시간
+///         구독 상태 검증을 위해 Google Cloud 서비스 계정 JSON 키가 필요합니다.
+///         RevenueCat 대시보드의 "Where do I find my service credentials?" 가이드
+///         (Project Settings → Google Play App Settings → Service account
+///         credentials)를 그대로 따라가면 자동화 스크립트를 제공합니다:
+///           - Google Cloud Console → 프로젝트 선택 → Cloud Shell 실행
+///           - RevenueCat 문서에 있는 setup 스크립트 실행 (androidpublisher API,
+///             Pub/Sub API 활성화 + 서비스 계정 생성 + 키 발급을 자동 처리)
+///           - 발급된 revenuecat-key.json을 RevenueCat에 업로드
+///           - Google Play Console → 사용자 및 권한에서 해당 서비스 계정에
+///             "계정 관리" 권한 부여 필요
+///      c. 위 App 연결이 완료되면 자동 발급되는 **"Public API key(SDK API key)"**
+///         (goog_로 시작)를 아래 [_androidApiKey]에 붙여넣기
+///      d. Product catalog → Entitlements에서 "premium" 식별자로 Entitlement 생성
+///      e. 위 2개 구독 상품을 Google Play에서 가져와(Import) "premium" Entitlement에
+///         연결(Attach)
+///      f. Offerings에서 "default" Offering을 만들고 두 상품을 Package로 추가
 ///
 /// 위 설정이 완료되고 [_androidApiKey]가 채워지기 전까지는 [purchase]/[restore]가
 /// 항상 [PurchaseResult.notReady]를 반환해 "준비 중" 안내만 표시합니다(안전한 기본값).
+///
+/// 참고: Service Credentials 설정 없이 Public API key만 넣어도 SDK 초기화 자체는
+/// 되지만, Google Play가 구독 상태를 RevenueCat에 실시간으로 통보하지 못해 구매
+/// 검증/복원이 불안정할 수 있습니다. 반드시 b) 단계까지 완료할 것을 권장합니다.
 library;
 
 import 'package:flutter/foundation.dart';

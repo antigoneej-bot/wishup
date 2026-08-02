@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>위시업(WishUp) 개인정보처리방침</title>
+<style>
+  :root {
+    --primary: #6C5CE7;
+    --bg: #FAFAFC;
+    --text: #2D2D3A;
+    --muted: #6B6B7B;
+    --card: #FFFFFF;
+    --border: #ECECF3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo",
+      "Malgun Gothic", "Noto Sans KR", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+  }
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  header .badge {
+    display: inline-block;
+    background: var(--primary);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: 26px;
+    margin: 0 0 8px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 28px 8px;
+    margin-bottom: 20px;
+  }
+  h2 {
+    font-size: 18px;
+    margin: 0 0 12px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary);
+    display: inline-block;
+  }
+  section { margin-bottom: 26px; }
+  p { margin: 0 0 14px; font-size: 15px; }
+  ul { margin: 0 0 14px; padding-left: 20px; }
+  li { margin-bottom: 8px; font-size: 15px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: #F5F3FF;
+    font-weight: 600;
+    width: 30%;
+  }
+  .highlight {
+    background: #F5F3FF;
+    border-left: 4px solid var(--primary);
+    padding: 14px 16px;
+    border-radius: 8px;
+    font-size: 14.5px;
+    color: var(--text);
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 40px;
+  }
+  a { color: var(--primary); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span class="badge">WishUp · 위시업</span>
+      <h1>개인정보처리방침</h1>
+      <p class="subtitle">시행일자: 2026년 08월 02일 · 최종 수정일: 2026년 08월 02일</p>
+    </header>
+
+    <div class="card">
+      <section>
+        <p>
+          위시업(이하 “앱”)은 이용자의 개인정보를 소중히 여기며, 「개인정보 보호법」 등
+          관련 법령을 준수합니다. 본 방침은 앱이 어떤 정보를 어떻게 처리하는지
+          안내합니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>1. 수집하는 정보와 저장 위치</h2>
+        <p>
+          앱은 <strong>회원가입이나 로그인 절차가 없으며</strong>, 목표·습관·저널·
+          369 필사·비전보드 이미지·우주편지 등 이용자가 작성한 모든 콘텐츠는
+          <strong>이용자의 기기 내부(로컬 저장소)에만 저장</strong>되고, 별도의
+          서버로 전송되거나 앱 개발자가 수집·열람하지 않습니다.
+        </p>
+        <table>
+          <tr><th>저장 항목</th><td>목표, 습관 기록, 저널/필사 내용, 비전보드 이미지, 우주편지, 리추얼 오디오 재생 기록, 앱 설정값</td></tr>
+          <tr><th>저장 방식</th><td>기기 내 로컬 데이터베이스(Hive) 및 환경설정 저장소(SharedPreferences)</td></tr>
+          <tr><th>외부 전송 여부</th><td>없음 (아래 “3. 제3자 제공”의 결제 정보 제외)</td></tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>2. 접근 권한 및 이용 목적</h2>
+        <ul>
+          <li><strong>사진(갤러리) 접근</strong> — 비전보드에 이용자가 원하는 이미지를 추가하기 위한 목적으로만 사용되며, 선택한 이미지는 기기 내에만 저장됩니다.</li>
+          <li><strong>알림</strong> — 목표/습관 리마인더를 이용자에게 발송하기 위해 사용되며, 기기 내부에서만 처리됩니다.</li>
+          <li><strong>캘린더 연동</strong> — 안드로이드 인텐트(Intent) 방식을 통해 캘린더 앱에 일정 추가를 요청할 뿐, 앱이 캘린더 데이터에 직접 접근하거나 저장하지 않습니다.</li>
+          <li><strong>파일 저장소(백업/복원)</strong> — 이용자가 직접 요청할 때만 데이터를 기기 내 파일로 내보내기/가져오기 하며, 클라우드 계정은 사용하지 않습니다.</li>
+        </ul>
+        <p class="highlight">
+          위 권한은 모두 선택적이며, 권한을 허용하지 않아도 해당 기능만 제한될 뿐
+          앱의 핵심 기능은 계속 이용할 수 있습니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>3. 제3자 제공 — 구독 결제 처리</h2>
+        <p>
+          앱 내 프리미엄 구독 결제는 <strong>Google Play 인앱 결제</strong>와
+          결제·구독 상태 관리 서비스인 <strong>RevenueCat</strong>을 통해 처리됩니다.
+          결제 진행 시 아래 정보가 해당 서비스에 전달될 수 있습니다.
+        </p>
+        <table>
+          <tr><th>제공받는 자</th><td>Google Play(Google LLC), RevenueCat, Inc.</td></tr>
+          <tr><th>제공 항목</th><td>앱 사용자 식별값(익명 ID), 구독 상품 ID, 구매/갱신/해지 이력, 기기 관련 결제 정보</td></tr>
+          <tr><th>제공 목적</th><td>인앱 구독 결제 처리 및 구독 상태(활성/만료) 확인</td></tr>
+          <tr><th>보유 기간</th><td>각 서비스의 자체 정책에 따름</td></tr>
+        </table>
+        <p>
+          해당 서비스의 개인정보 처리에 대한 자세한 내용은 아래 링크에서 확인하실 수 있습니다.
+        </p>
+        <ul>
+          <li><a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google 개인정보처리방침</a></li>
+          <li><a href="https://www.revenuecat.com/privacy" target="_blank" rel="noopener">RevenueCat 개인정보처리방침</a></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>4. 광고</h2>
+        <p>
+          본 앱은 <strong>광고 SDK를 사용하지 않으며, 광고 식별자(Advertising ID)를
+          수집하지 않습니다.</strong>
+        </p>
+      </section>
+
+      <section>
+        <h2>5. 개인정보의 파기</h2>
+        <p>
+          모든 이용자 콘텐츠는 기기 로컬에만 저장되므로, <strong>앱을 삭제(제거)하면
+          기기에 저장된 모든 데이터가 함께 삭제</strong>됩니다. 별도의 서버에
+          보관되는 개인정보가 없어 추가적인 파기 절차가 필요하지 않습니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>6. 아동의 개인정보 보호</h2>
+        <p>
+          본 앱은 만 14세 미만 아동을 주 이용 대상으로 하지 않으며, 아동으로부터
+          고의로 개인정보를 수집하지 않습니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>7. 이용자의 권리</h2>
+        <p>
+          이용자는 언제든지 앱 내 데이터를 직접 삭제하거나, 앱을 삭제하여 모든
+          로컬 데이터를 제거할 수 있습니다. 구독 관련 문의(환불, 해지 등)는 Google
+          Play 스토어의 구독 관리 메뉴를 통해서도 처리 가능합니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>8. 개인정보처리방침의 변경</h2>
+        <p>
+          본 방침은 법령, 정책 또는 서비스 변경사항을 반영하기 위해 수정될 수
+          있으며, 변경 시 본 페이지를 통해 고지합니다.
+        </p>
+      </section>
+
+      <section>
+        <h2>9. 문의처</h2>
+        <table>
+          <tr><th>서비스명</th><td>위시업 (WishUp)</td></tr>
+          <tr><th>이메일</th><td>wishupapp.official@gmail.com</td></tr>
+        </table>
+        <p class="highlight">
+          ※ 위 이메일 주소는 임시 안내용입니다. 실제 사용하실 고객지원 이메일
+          주소가 정해지면 이 페이지의 문의처를 교체해 주세요.
+        </p>
+      </section>
+    </div>
+
+    <footer>
+      &copy; 2026 WishUp. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>
