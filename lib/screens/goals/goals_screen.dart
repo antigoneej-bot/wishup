@@ -35,6 +35,7 @@ class GoalsScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('나의 목표')),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'goals_fab',
         backgroundColor: AppColors.navy,
         onPressed: () => _handleAddGoal(context),
         child: const Icon(Icons.add, color: Colors.white),

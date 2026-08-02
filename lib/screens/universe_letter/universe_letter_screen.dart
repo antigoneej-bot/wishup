@@ -34,6 +34,7 @@ class UniverseLetterScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('우주에 편지쓰기')),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'universe_letter_fab',
         backgroundColor: AppColors.navy,
         onPressed: () => _handleWriteLetter(context),
         child: const Icon(Icons.add, color: Colors.white),

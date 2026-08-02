@@ -190,6 +190,7 @@ class VisionBoardScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('비전보드')),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'vision_fab',
         backgroundColor: AppColors.navy,
         onPressed: () => _handleAddPressed(context),
         child: const Icon(Icons.add, color: Colors.white),

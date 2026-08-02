@@ -26,6 +26,7 @@ class _JournalScreenState extends State<JournalScreen> {
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('저널')),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'journal_fab',
         backgroundColor: AppColors.navy,
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddJournalEntryScreen())),
         child: const Icon(Icons.add, color: Colors.white),

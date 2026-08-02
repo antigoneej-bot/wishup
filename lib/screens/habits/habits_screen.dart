@@ -18,6 +18,7 @@ class HabitsScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       appBar: AppBar(title: const Text('정체성 습관')),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'habits_fab',
         backgroundColor: AppColors.navy,
         onPressed: () => _handleAddHabit(context),
         child: const Icon(Icons.add, color: Colors.white),
