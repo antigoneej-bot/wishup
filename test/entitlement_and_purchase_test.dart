@@ -65,7 +65,9 @@ void main() {
     });
 
     test('연간 플랜에는 할인 배지가 붙어있다', () {
-      final yearly = PurchaseService.plans.firstWhere((p) => p.id == 'wishup_premium_yearly');
+      final yearly = PurchaseService.plans.firstWhere(
+        (p) => p.id == 'wishup_premium_yearly',
+      );
       expect(yearly.badge, isNotNull);
     });
 
@@ -83,9 +85,9 @@ void main() {
       expect(result, PurchaseResult.notReady);
     });
 
-    test('미설정 상태에서 checkEntitlement()는 false를 반환한다(프리미엄 미인증 취급)', () async {
+    test('미설정 상태에서 checkEntitlement()는 null을 반환한다(조회 불가)', () async {
       final active = await PurchaseService.checkEntitlement();
-      expect(active, false);
+      expect(active, isNull);
     });
 
     test('존재하지 않는 planId로 구매를 시도해도 크래시하지 않는다', () async {

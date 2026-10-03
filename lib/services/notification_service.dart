@@ -7,7 +7,8 @@ import 'package:timezone/data/latest.dart' as tzdata;
 /// - 데일리 확언 리마인더
 /// - 습관 실천 리마인더
 class NotificationService {
-  static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin _plugin =
+      FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
 
   static const int affirmationNotifId = 1001;
@@ -21,13 +22,18 @@ class NotificationService {
     } catch (_) {
       // 타임존 초기화 실패 시 UTC로 폴백
     }
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
-    const initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
     try {
       await _plugin.initialize(initSettings);
       _initialized = true;
@@ -39,16 +45,24 @@ class NotificationService {
   static Future<bool> requestPermission() async {
     if (kIsWeb) return false;
     try {
-      final androidImpl = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidImpl = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (androidImpl != null) {
         final granted = await androidImpl.requestNotificationsPermission();
         return granted ?? false;
       }
-      final iosImpl = _plugin.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
+      final iosImpl = _plugin
+          .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin
+          >();
       if (iosImpl != null) {
-        final granted = await iosImpl.requestPermissions(alert: true, badge: true, sound: true);
+        final granted = await iosImpl.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
         return granted ?? false;
       }
       return true;
@@ -57,7 +71,10 @@ class NotificationService {
     }
   }
 
-  static Future<void> scheduleDailyAffirmation({int hour = 9, int minute = 0}) async {
+  static Future<void> scheduleDailyAffirmation({
+    int hour = 9,
+    int minute = 0,
+  }) async {
     if (kIsWeb) return;
     try {
       await _plugin.zonedSchedule(
@@ -76,13 +93,17 @@ class NotificationService {
           iOS: DarwinNotificationDetails(),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
       );
     } catch (_) {}
   }
 
-  static Future<void> scheduleHabitReminder({int hour = 20, int minute = 0}) async {
+  static Future<void> scheduleHabitReminder({
+    int hour = 20,
+    int minute = 0,
+  }) async {
     if (kIsWeb) return;
     try {
       await _plugin.zonedSchedule(
@@ -101,9 +122,17 @@ class NotificationService {
           iOS: DarwinNotificationDetails(),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.time,
       );
+    } catch (_) {}
+  }
+
+  static Future<void> cancelAll() async {
+    if (kIsWeb) return;
+    try {
+      await _plugin.cancelAll();
     } catch (_) {}
   }
 
@@ -148,7 +177,8 @@ class NotificationService {
           iOS: DarwinNotificationDetails(),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (_) {}
   }
@@ -187,7 +217,8 @@ class NotificationService {
           iOS: DarwinNotificationDetails(sound: 'ding_dong.mp3'),
         ),
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (_) {}
   }
@@ -200,7 +231,12 @@ class NotificationService {
         '✦ WishUp 알림 테스트',
         '알림이 정상적으로 도착했어요!',
         const NotificationDetails(
-          android: AndroidNotificationDetails('test_channel', '테스트 알림', importance: Importance.high, priority: Priority.high),
+          android: AndroidNotificationDetails(
+            'test_channel',
+            '테스트 알림',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
           iOS: DarwinNotificationDetails(),
         ),
       );
@@ -209,7 +245,14 @@ class NotificationService {
 
   static tz.TZDateTime _nextInstance(int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }

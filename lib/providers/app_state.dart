@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/goal.dart';
@@ -20,11 +22,112 @@ const _uuid = Uuid();
 /// 스토어 스크린샷 촬영 등 데모 목적일 때만 활성화되는 샘플 데이터 시드 플래그.
 /// 빌드 시 --dart-define=SEED_DEMO=true 를 명시적으로 넘기지 않으면 항상 false이며,
 /// 일반 프로덕션 빌드에는 절대 영향을 주지 않습니다.
-const bool kSeedDemoData = bool.fromEnvironment('SEED_DEMO', defaultValue: false);
+const bool kSeedDemoData = bool.fromEnvironment(
+  'SEED_DEMO',
+  defaultValue: false,
+);
 
 /// 앱 전역 상태 관리 (Provider)
 /// 모든 데이터 CRUD + 파생 데이터(에너지 스코어, AI 인사이트) 계산
 class AppState extends ChangeNotifier {
+  AppState({DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
+  final DateTime Function() _clock;
+
+  String get ritualDate => _fmtDate(_clock());
+  Map<String, dynamic> get todayRitual {
+    final all =
+        StorageService.settings.get(
+              'dailyRituals',
+              defaultValue: <String, dynamic>{},
+            )
+            as Map;
+    return Map<String, dynamic>.from(all[ritualDate] as Map? ?? {});
+  }
+
+  bool get ritualAffirmationRead => todayRitual['affirmationRead'] == true;
+  String get ritualActionTitle => todayRitual['actionTitle'] as String? ?? '';
+  String? get ritualGoalId {
+    final id = todayRitual['goalId'] as String?;
+    return goals.any((goal) => goal.id == id) ? id : null;
+  }
+
+  bool get ritualActionDone {
+    final ritual = todayRitual;
+    final habitId = ritual['habitId'];
+    final linked = habits.where((habit) => habit.id == habitId);
+    if (linked.isNotEmpty) {
+      return linked.first.completedDates.contains(ritualDate);
+    }
+    return ritual['actionDone'] == true;
+  }
+
+  bool get ritualJournalDone => journalEntries.any(
+    (entry) =>
+        _fmtDate(entry.createdAt) == ritualDate &&
+        entry.type != JournalType.script &&
+        entry.content.trim().isNotEmpty,
+  );
+  int get ritualCompletedSteps =>
+      (ritualAffirmationRead ? 1 : 0) +
+      (ritualActionDone ? 1 : 0) +
+      (ritualJournalDone ? 1 : 0);
+
+  Future<void> _saveRitual(String date, Map<String, dynamic> changes) async {
+    if (date != ritualDate) throw StateError('날짜가 바뀌었어요. 오늘의 리추얼을 다시 열어주세요.');
+    final all = Map<String, dynamic>.from(
+      StorageService.settings.get(
+            'dailyRituals',
+            defaultValue: <String, dynamic>{},
+          )
+          as Map,
+    );
+    final current = Map<String, dynamic>.from(all[date] as Map? ?? {});
+    all[date] = {...current, ...changes};
+    await StorageService.settings.put('dailyRituals', all);
+    notifyListeners();
+  }
+
+  Future<void> readRitualAffirmation(String date) =>
+      _saveRitual(date, {'affirmationRead': true});
+
+  Future<void> planRitualAction(
+    String date,
+    String title, {
+    String? goalId,
+    String? habitId,
+  }) async {
+    final trimmed = title.trim();
+    if (trimmed.isEmpty || trimmed.length > 100) {
+      throw ArgumentError('행동을 1~100자로 적어주세요.');
+    }
+    if (goalId != null && !goals.any((goal) => goal.id == goalId)) {
+      throw StateError('목표를 다시 선택해주세요.');
+    }
+    if (habitId != null && !habits.any((habit) => habit.id == habitId)) {
+      throw StateError('습관을 다시 선택해주세요.');
+    }
+    await _saveRitual(date, {
+      'actionTitle': trimmed,
+      'goalId': goalId,
+      'habitId': habitId,
+      'actionDone': false,
+    });
+  }
+
+  Future<void> completeRitualAction(String date) async {
+    if (date != ritualDate || ritualActionTitle.isEmpty) {
+      throw StateError('오늘의 행동을 먼저 정해주세요.');
+    }
+    final id = todayRitual['habitId'];
+    final linked = habits.where((habit) => habit.id == id);
+    // Completing here must never toggle an already-completed habit off.
+    if (linked.isNotEmpty &&
+        !linked.first.completedDates.contains(ritualDate)) {
+      await toggleHabitToday(linked.first.id);
+    }
+    await _saveRitual(date, {'actionDone': true});
+  }
+
   bool onboardingCompleted = false;
   String userName = '';
   List<GoalCategory> focusAreas = [];
@@ -61,6 +164,9 @@ class AppState extends ChangeNotifier {
     habits = StorageService.habits.values
         .map((m) => Habit.fromMap(m as Map))
         .toList();
+    for (final habit in habits) {
+      habit.streak = habit.currentStreak(now: _clock());
+    }
     journalEntries =
         StorageService.journal.values
             .map((m) => JournalEntry.fromMap(m as Map))
@@ -85,6 +191,18 @@ class AppState extends ChangeNotifier {
         settings.get('moonRitualNotifEnabled', defaultValue: false) as bool;
     scriptingWish = settings.get('scriptingWish', defaultValue: '') as String;
 
+    if (affirmationNotifEnabled) {
+      await NotificationService.scheduleDailyAffirmation();
+    }
+    if (habitNotifEnabled) {
+      await NotificationService.scheduleHabitReminder();
+    }
+    for (final letter in letters.where((letter) => !letter.isRead)) {
+      await NotificationService.scheduleUniverseReply(
+        id: _letterNotifId(letter.id),
+        dateTime: letter.openDate,
+      );
+    }
     if (moonRitualNotifEnabled) {
       await _rescheduleMoonRitual();
     }
@@ -101,7 +219,7 @@ class AppState extends ChangeNotifier {
     if (!PurchaseService.isConfigured) return;
     try {
       final active = await PurchaseService.checkEntitlement();
-      if (active != EntitlementService.isPremium) {
+      if (active != null && active != EntitlementService.isPremium) {
         await setPremiumStatus(active);
       }
     } catch (_) {}
@@ -351,6 +469,8 @@ class AppState extends ChangeNotifier {
   Future<void> addMilestone(String goalId, String title) async {
     final goal = goals.firstWhere((g) => g.id == goalId);
     goal.milestones.add(Milestone(id: _uuid.v4(), title: title));
+    goal.progress =
+        goal.milestones.where((m) => m.isDone).length / goal.milestones.length;
     await StorageService.goals.put(goal.id, goal.toMap());
     notifyListeners();
   }
@@ -375,15 +495,19 @@ class AppState extends ChangeNotifier {
 
   Future<CelebrationType?> toggleHabitToday(String habitId) async {
     final habit = habits.firstWhere((h) => h.id == habitId);
-    final today = _fmtDate(DateTime.now());
+    final today = ritualDate;
     CelebrationType? celebration;
     if (habit.completedDates.contains(today)) {
       habit.completedDates.remove(today);
-      habit.streak = (habit.streak - 1).clamp(0, 999999);
+      habit.streak = habit.currentStreak(now: _clock());
+      final dates = habit.completedDates.toList()..sort();
+      habit.lastCompletedAt = dates.isEmpty
+          ? null
+          : DateTime.tryParse(dates.last);
     } else {
       habit.completedDates.add(today);
-      habit.streak += 1;
-      habit.lastCompletedAt = DateTime.now();
+      habit.streak = habit.currentStreak(now: _clock());
+      habit.lastCompletedAt = _clock();
       if (habit.streak == 7) {
         celebration = CelebrationType.streak7;
       } else if (habit.streak == 30) {
@@ -421,9 +545,10 @@ class AppState extends ChangeNotifier {
       moodScore: moodScore,
       linkedGoalId: linkedGoalId,
       period: period,
+      createdAt: _clock(),
     );
-    journalEntries.insert(0, entry);
     await StorageService.journal.put(entry.id, entry.toMap());
+    journalEntries.insert(0, entry);
     notifyListeners();
   }
 
@@ -461,6 +586,16 @@ class AppState extends ChangeNotifier {
     String caption = '',
     bool isAssetImage = false,
   }) async {
+    if (!kIsWeb && imagePath != null && !isAssetImage) {
+      final dir = await getApplicationSupportDirectory();
+      final images = await Directory(
+        '${dir.path}/vision_images',
+      ).create(recursive: true);
+      final saved = await File(
+        imagePath,
+      ).copy('${images.path}/${_uuid.v4()}.jpg');
+      imagePath = saved.path;
+    }
     final item = VisionItem(
       id: _uuid.v4(),
       imagePath: imagePath,
@@ -517,10 +652,10 @@ class AppState extends ChangeNotifier {
 
   // ---------------- Notification Settings ----------------
   Future<void> setAffirmationNotif(bool enabled) async {
+    if (enabled && !await NotificationService.requestPermission()) return;
     affirmationNotifEnabled = enabled;
     await StorageService.settings.put('affirmationNotifEnabled', enabled);
     if (enabled) {
-      await NotificationService.requestPermission();
       await NotificationService.scheduleDailyAffirmation();
     } else {
       await NotificationService.cancelAffirmation();
@@ -529,10 +664,10 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> setHabitNotif(bool enabled) async {
+    if (enabled && !await NotificationService.requestPermission()) return;
     habitNotifEnabled = enabled;
     await StorageService.settings.put('habitNotifEnabled', enabled);
     if (enabled) {
-      await NotificationService.requestPermission();
       await NotificationService.scheduleHabitReminder();
     } else {
       await NotificationService.cancelHabitReminder();
@@ -542,10 +677,10 @@ class AppState extends ChangeNotifier {
 
   // ---------------- Moon Ritual ----------------
   Future<void> setMoonRitualNotif(bool enabled) async {
+    if (enabled && !await NotificationService.requestPermission()) return;
     moonRitualNotifEnabled = enabled;
     await StorageService.settings.put('moonRitualNotifEnabled', enabled);
     if (enabled) {
-      await NotificationService.requestPermission();
       await _rescheduleMoonRitual();
     } else {
       await NotificationService.cancelOneOff(2001);

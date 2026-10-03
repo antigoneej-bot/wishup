@@ -19,6 +19,8 @@ class _RitualPlayerScreenState extends State<RitualPlayerScreen> {
   Duration _position = Duration.zero;
   bool _isPlaying = false;
   bool _isLoading = true;
+  bool _busy = false;
+  String? _error;
 
   StreamSubscription? _durationSub;
   StreamSubscription? _positionSub;
@@ -50,12 +52,35 @@ class _RitualPlayerScreenState extends State<RitualPlayerScreen> {
       }
     });
 
+    await _loadSource();
+  }
+
+  Future<void> _loadSource() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
     try {
+      await _player.setReleaseMode(ReleaseMode.stop);
+      if (!mounted) return;
       await _player.setSource(AssetSource(widget.ritual.assetPath));
     } catch (_) {
-      // 로드 실패 시에도 UI는 정상 표시
+      if (mounted) setState(() => _error = '오디오를 불러오지 못했어요. 다시 시도해주세요.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    if (_busy || _isLoading || _error != null) return;
+    _busy = true;
+    try {
+      await action();
+    } catch (_) {
+      if (mounted) setState(() => _error = '재생을 계속할 수 없어요. 다시 시도해주세요.');
+    } finally {
+      _busy = false;
+    }
   }
 
   @override
@@ -68,23 +93,23 @@ class _RitualPlayerScreenState extends State<RitualPlayerScreen> {
     super.dispose();
   }
 
-  Future<void> _togglePlay() async {
+  Future<void> _togglePlay() => _run(() async {
     if (_isPlaying) {
       await _player.pause();
     } else {
       await _player.resume();
     }
-  }
+  });
 
-  Future<void> _rewind() async {
+  Future<void> _rewind() => _run(() async {
     final target = _position - const Duration(seconds: 10);
     await _player.seek(target < Duration.zero ? Duration.zero : target);
-  }
+  });
 
-  Future<void> _forward() async {
+  Future<void> _forward() => _run(() async {
     final target = _position + const Duration(seconds: 10);
     await _player.seek(target > _duration ? _duration : target);
-  }
+  });
 
   String _fmt(Duration d) {
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -109,92 +134,152 @@ class _RitualPlayerScreenState extends State<RitualPlayerScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 160,
-                height: 160,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.08),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: Text(ritual.emoji, style: const TextStyle(fontSize: 64)),
-              ),
-              const SizedBox(height: 32),
-              Text(ritual.title,
-                  style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Text(
-                ritual.subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, height: 1.5),
-              ),
-              const SizedBox(height: 44),
-              if (_isLoading)
-                const CircularProgressIndicator(color: Colors.white)
-              else ...[
-                SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    activeTrackColor: Colors.white,
-                    inactiveTrackColor: Colors.white.withValues(alpha: 0.2),
-                    thumbColor: Colors.white,
-                    overlayColor: Colors.white.withValues(alpha: 0.1),
-                    trackHeight: 3,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 160,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    shape: BoxShape.circle,
                   ),
-                  child: Slider(
-                    min: 0,
-                    max: maxMs > 0 ? maxMs : 1,
-                    value: curMs.clamp(0, maxMs > 0 ? maxMs : 1),
-                    onChanged: (v) async {
-                      await _player.seek(Duration(milliseconds: v.toInt()));
-                    },
+                  alignment: Alignment.center,
+                  child: Text(
+                    ritual.emoji,
+                    style: const TextStyle(fontSize: 64),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                const SizedBox(height: 32),
+                Text(
+                  ritual.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  ritual.subtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 44),
+                if (_isLoading)
+                  const CircularProgressIndicator(color: Colors.white)
+                else if (_error != null) ...[
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  TextButton(
+                    onPressed: _loadSource,
+                    child: const Text(
+                      '다시 시도',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ] else ...[
+                  SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      activeTrackColor: Colors.white,
+                      inactiveTrackColor: Colors.white.withValues(alpha: 0.2),
+                      thumbColor: Colors.white,
+                      overlayColor: Colors.white.withValues(alpha: 0.1),
+                      trackHeight: 3,
+                    ),
+                    child: Slider(
+                      min: 0,
+                      max: maxMs > 0 ? maxMs : 1,
+                      value: curMs.clamp(0, maxMs > 0 ? maxMs : 1),
+                      onChanged: (v) async {
+                        await _run(
+                          () => _player.seek(Duration(milliseconds: v.toInt())),
+                        );
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _fmt(_position),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          _fmt(_duration),
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(_fmt(_position), style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
-                      Text(_fmt(_duration), style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                      IconButton(
+                        onPressed: _rewind,
+                        icon: const Icon(
+                          Icons.replay_10,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      GestureDetector(
+                        onTap: _togglePlay,
+                        child: Container(
+                          width: 72,
+                          height: 72,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _isPlaying ? Icons.pause : Icons.play_arrow,
+                            color: AppColors.navy,
+                            size: 36,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      IconButton(
+                        onPressed: _forward,
+                        icon: const Icon(
+                          Icons.forward_10,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      onPressed: _rewind,
-                      icon: const Icon(Icons.replay_10, color: Colors.white, size: 30),
-                    ),
-                    const SizedBox(width: 24),
-                    GestureDetector(
-                      onTap: _togglePlay,
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                        child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow, color: AppColors.navy, size: 36),
-                      ),
-                    ),
-                    const SizedBox(width: 24),
-                    IconButton(
-                      onPressed: _forward,
-                      icon: const Icon(Icons.forward_10, color: Colors.white, size: 30),
-                    ),
-                  ],
+                ],
+                const SizedBox(height: 40),
+                Text(
+                  '🎧 이어폰 착용을 권장해요 · 조용한 공간에서 눈을 감고 들어보세요',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 11.5,
+                  ),
                 ),
               ],
-              const SizedBox(height: 40),
-              Text(
-                '🎧 이어폰 착용을 권장해요 · 조용한 공간에서 눈을 감고 들어보세요',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11.5),
-              ),
-            ],
+            ),
           ),
         ),
       ),

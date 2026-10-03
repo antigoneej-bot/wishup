@@ -16,6 +16,7 @@ class AddJournalEntryScreen extends StatefulWidget {
 class _AddJournalEntryScreenState extends State<AddJournalEntryScreen> {
   late JournalType _type;
   int _mood = 3;
+  bool _saving = false;
   final _controller = TextEditingController();
 
   @override
@@ -39,15 +40,32 @@ class _AddJournalEntryScreenState extends State<AddJournalEntryScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   Future<void> _save() async {
-    if (_controller.text.trim().isEmpty) return;
-    await context.read<AppState>().addJournalEntry(
-          type: _type,
-          content: _controller.text.trim(),
-          moodScore: _mood,
-          linkedGoalId: widget.linkedGoalId,
+    if (_saving || _controller.text.trim().isEmpty) return;
+    setState(() => _saving = true);
+    try {
+      await context.read<AppState>().addJournalEntry(
+        type: _type,
+        content: _controller.text.trim(),
+        moodScore: _mood,
+        linkedGoalId: widget.linkedGoalId,
+      );
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('기록을 저장하지 못했어요. 다시 시도해주세요.')),
         );
-    if (mounted) Navigator.pop(context);
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -61,30 +79,55 @@ class _AddJournalEntryScreenState extends State<AddJournalEntryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('종류', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              const Text(
+                '종류',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
               const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: JournalType.values.where((t) => t != JournalType.script).map((t) {
-                  final selected = _type == t;
-                  return GestureDetector(
-                    onTap: () => setState(() => _type = t),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: selected ? AppColors.navy : AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: selected ? AppColors.navy : Colors.black12),
-                      ),
-                      child: Text(t.label, style: TextStyle(color: selected ? Colors.white : AppColors.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
-                    ),
-                  );
-                }).toList(),
+                children: JournalType.values
+                    .where((t) => t != JournalType.script)
+                    .map((t) {
+                      final selected = _type == t;
+                      return GestureDetector(
+                        onTap: () => setState(() => _type = t),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? AppColors.navy
+                                : AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: selected ? AppColors.navy : Colors.black12,
+                            ),
+                          ),
+                          child: Text(
+                            t.label,
+                            style: TextStyle(
+                              color: selected
+                                  ? Colors.white
+                                  : AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      );
+                    })
+                    .toList(),
               ),
               const SizedBox(height: 24),
 
-              const Text('지금 기분은 어떤가요?', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              const Text(
+                '지금 기분은 어떤가요?',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+              ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -98,19 +141,32 @@ class _AddJournalEntryScreenState extends State<AddJournalEntryScreen> {
                       width: 52,
                       height: 52,
                       decoration: BoxDecoration(
-                        color: selected ? AppColors.navy.withValues(alpha: 0.1) : Colors.transparent,
+                        color: selected
+                            ? AppColors.navy.withValues(alpha: 0.1)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: selected ? AppColors.navy : Colors.black12),
+                        border: Border.all(
+                          color: selected ? AppColors.navy : Colors.black12,
+                        ),
                       ),
                       alignment: Alignment.center,
-                      child: Text(_emoji(score), style: const TextStyle(fontSize: 22)),
+                      child: Text(
+                        _emoji(score),
+                        style: const TextStyle(fontSize: 22),
+                      ),
                     ),
                   );
                 }),
               ),
               const SizedBox(height: 24),
 
-              Text(_hint, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+              Text(
+                _hint,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
               const SizedBox(height: 10),
               TextField(
                 controller: _controller,
@@ -119,7 +175,13 @@ class _AddJournalEntryScreenState extends State<AddJournalEntryScreen> {
               ),
               const SizedBox(height: 32),
 
-              SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _save, child: const Text('저장하기'))),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  child: Text(_saving ? '저장 중…' : '저장하기'),
+                ),
+              ),
             ],
           ),
         ),
@@ -129,12 +191,18 @@ class _AddJournalEntryScreenState extends State<AddJournalEntryScreen> {
 
   String _emoji(int score) {
     switch (score) {
-      case 1: return '😞';
-      case 2: return '😕';
-      case 3: return '😐';
-      case 4: return '🙂';
-      case 5: return '😄';
-      default: return '😐';
+      case 1:
+        return '😞';
+      case 2:
+        return '😕';
+      case 3:
+        return '😐';
+      case 4:
+        return '🙂';
+      case 5:
+        return '😄';
+      default:
+        return '😐';
     }
   }
 }

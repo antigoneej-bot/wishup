@@ -17,37 +17,56 @@ class Habit {
     this.lastCompletedAt,
     List<String>? completedDates,
     DateTime? createdAt,
-  })  : completedDates = completedDates ?? [],
-        createdAt = createdAt ?? DateTime.now();
+  }) : completedDates = completedDates ?? [],
+       createdAt = createdAt ?? DateTime.now();
 
   bool isDoneToday() {
     final today = _fmt(DateTime.now());
     return completedDates.contains(today);
   }
 
+  /// Count consecutive calendar dates, allowing today to remain unfinished.
+  int currentStreak({DateTime? now}) {
+    final date = now ?? DateTime.now();
+    var cursor = DateTime(date.year, date.month, date.day);
+    final dates = completedDates.toSet();
+    if (!dates.contains(_fmt(cursor))) {
+      cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
+    }
+    var count = 0;
+    while (dates.contains(_fmt(cursor))) {
+      count++;
+      cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
+    }
+    return count;
+  }
+
   static String _fmt(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'title': title,
-        'linkedGoalId': linkedGoalId,
-        'streak': streak,
-        'lastCompletedAt': lastCompletedAt?.toIso8601String(),
-        'completedDates': completedDates,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'title': title,
+    'linkedGoalId': linkedGoalId,
+    'streak': streak,
+    'lastCompletedAt': lastCompletedAt?.toIso8601String(),
+    'completedDates': completedDates,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory Habit.fromMap(Map map) => Habit(
-        id: map['id'] as String,
-        title: map['title'] as String,
-        linkedGoalId: map['linkedGoalId'] as String?,
-        streak: map['streak'] as int? ?? 0,
-        lastCompletedAt:
-            map['lastCompletedAt'] != null ? DateTime.tryParse(map['lastCompletedAt'] as String) : null,
-        completedDates: (map['completedDates'] as List? ?? []).map((e) => e.toString()).toList(),
-        createdAt: map['createdAt'] != null
-            ? DateTime.tryParse(map['createdAt'] as String) ?? DateTime.now()
-            : DateTime.now(),
-      );
+    id: map['id'] as String,
+    title: map['title'] as String,
+    linkedGoalId: map['linkedGoalId'] as String?,
+    streak: map['streak'] as int? ?? 0,
+    lastCompletedAt: map['lastCompletedAt'] != null
+        ? DateTime.tryParse(map['lastCompletedAt'] as String)
+        : null,
+    completedDates: (map['completedDates'] as List? ?? [])
+        .map((e) => e.toString())
+        .toList(),
+    createdAt: map['createdAt'] != null
+        ? DateTime.tryParse(map['createdAt'] as String) ?? DateTime.now()
+        : DateTime.now(),
+  );
 }

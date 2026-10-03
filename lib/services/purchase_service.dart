@@ -71,7 +71,14 @@ class PurchaseService {
   /// RevenueCat 대시보드 → Project settings → API keys →
   /// "Public app-specific API key"(Google Play Store)를 여기에 붙여넣으세요.
   /// 예: goog_XXXXXXXXXXXXXXXXXXXXXXXXXXX
-  static const String _androidApiKey = 'YOUR_REVENUECAT_ANDROID_API_KEY';
+  static const String _androidApiKey = String.fromEnvironment(
+    'REVENUECAT_ANDROID_API_KEY',
+  );
+  static const String _iosApiKey = String.fromEnvironment(
+    'REVENUECAT_IOS_API_KEY',
+  );
+  static String get _apiKey =>
+      defaultTargetPlatform == TargetPlatform.iOS ? _iosApiKey : _androidApiKey;
 
   /// RevenueCat 대시보드에서 생성한 Entitlement 식별자(기본값 "premium").
   static const String entitlementId = 'premium';
@@ -81,8 +88,11 @@ class PurchaseService {
   /// 실제 API 키가 채워졌는지 여부. 채워지기 전까지는 모든 결제 기능이 안전하게
   /// notReady 상태로 동작합니다.
   static bool get isConfigured =>
-      _androidApiKey != 'YOUR_REVENUECAT_ANDROID_API_KEY' &&
-      _androidApiKey.isNotEmpty;
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS) &&
+      _apiKey.isNotEmpty &&
+      !_apiKey.startsWith('YOUR_');
 
   /// 예시 가격입니다. 실제 스토어 상품 등록 시 정확한 가격으로 교체해주세요.
   /// id 값은 Google Play Console에 등록한 구독 상품 ID와 정확히 일치해야 합니다.
@@ -111,7 +121,7 @@ class PurchaseService {
       await rc.Purchases.setLogLevel(
         kDebugMode ? rc.LogLevel.debug : rc.LogLevel.info,
       );
-      final config = rc.PurchasesConfiguration(_androidApiKey);
+      final config = rc.PurchasesConfiguration(_apiKey);
       await rc.Purchases.configure(config);
       _initialized = true;
     } catch (e) {
@@ -122,14 +132,14 @@ class PurchaseService {
   /// 현재 로그인된 고객의 CustomerInfo를 조회해 "premium" Entitlement가
   /// 활성 상태인지 확인합니다. 앱 시작 시 로컬 저장된 프리미엄 상태를
   /// 서버 상태와 동기화하는 용도로 사용하세요.
-  static Future<bool> checkEntitlement() async {
-    if (kIsWeb || !isConfigured || !_initialized) return false;
+  static Future<bool?> checkEntitlement() async {
+    if (kIsWeb || !isConfigured || !_initialized) return null;
     try {
       final info = await rc.Purchases.getCustomerInfo();
       return info.entitlements.active.containsKey(entitlementId);
     } catch (e) {
       if (kDebugMode) debugPrint('PurchaseService.checkEntitlement failed: $e');
-      return false;
+      return null;
     }
   }
 

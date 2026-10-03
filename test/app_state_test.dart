@@ -14,6 +14,14 @@ import 'package:wishup/services/entitlement_service.dart';
 
 import 'test_helpers/hive_test_helper.dart';
 
+List<String> previousDates(int count) {
+  final now = DateTime.now();
+  return List.generate(count, (i) {
+    final d = DateTime(now.year, now.month, now.day - i - 1);
+    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  });
+}
+
 void main() {
   late Directory tempDir;
   late AppState appState;
@@ -31,7 +39,10 @@ void main() {
 
   group('온보딩', () {
     test('completeOnboarding 이후 이름/영역/완료플래그가 저장되고 재로딩 후에도 유지된다', () async {
-      await appState.completeOnboarding(name: '민지', areas: [GoalCategory.wealth, GoalCategory.health]);
+      await appState.completeOnboarding(
+        name: '민지',
+        areas: [GoalCategory.wealth, GoalCategory.health],
+      );
 
       expect(appState.userName, '민지');
       expect(appState.onboardingCompleted, true);
@@ -48,8 +59,16 @@ void main() {
 
   group('목표(Goals) CRUD', () {
     test('addGoal은 목록 맨 앞에 추가되고 Hive에도 영속화된다', () async {
-      await appState.addGoal(title: '첫 목표', identityStatement: '나는 해낸다', category: GoalCategory.growth);
-      await appState.addGoal(title: '두번째 목표', identityStatement: '나는 계속한다', category: GoalCategory.career);
+      await appState.addGoal(
+        title: '첫 목표',
+        identityStatement: '나는 해낸다',
+        category: GoalCategory.growth,
+      );
+      await appState.addGoal(
+        title: '두번째 목표',
+        identityStatement: '나는 계속한다',
+        category: GoalCategory.career,
+      );
 
       expect(appState.goals, hasLength(2));
       expect(appState.goals.first.title, '두번째 목표'); // 최신 항목이 앞에 온다
@@ -60,7 +79,11 @@ void main() {
     });
 
     test('updateGoalProgress는 0.0~1.0 범위로 clamp된다', () async {
-      final goal = await appState.addGoal(title: '목표', identityStatement: '나는 성장한다', category: GoalCategory.growth);
+      final goal = await appState.addGoal(
+        title: '목표',
+        identityStatement: '나는 성장한다',
+        category: GoalCategory.growth,
+      );
 
       await appState.updateGoalProgress(goal.id, 1.5);
       expect(appState.goals.first.progress, 1.0);
@@ -70,7 +93,11 @@ void main() {
     });
 
     test('마일스톤을 모두 완료하면 목표 완료 축하 이벤트가 발생한다', () async {
-      final goal = await appState.addGoal(title: '목표', identityStatement: '나는 이룬다', category: GoalCategory.growth);
+      final goal = await appState.addGoal(
+        title: '목표',
+        identityStatement: '나는 이룬다',
+        category: GoalCategory.growth,
+      );
       await appState.addMilestone(goal.id, '1단계');
       await appState.addMilestone(goal.id, '2단계');
 
@@ -83,13 +110,20 @@ void main() {
       expect(appState.goals.first.progress, closeTo(0.5, 0.0001));
 
       // 두번째 마일스톤까지 완료 -> 100%, 목표 완료 축하 발생
-      final secondResult = await appState.toggleMilestone(goal.id, milestone2Id);
+      final secondResult = await appState.toggleMilestone(
+        goal.id,
+        milestone2Id,
+      );
       expect(secondResult, CelebrationType.goalComplete);
       expect(appState.goals.first.progress, 1.0);
     });
 
     test('deleteGoal은 목록과 저장소 양쪽에서 제거된다', () async {
-      final goal = await appState.addGoal(title: '삭제될 목표', identityStatement: '나는 정리한다', category: GoalCategory.growth);
+      final goal = await appState.addGoal(
+        title: '삭제될 목표',
+        identityStatement: '나는 정리한다',
+        category: GoalCategory.growth,
+      );
       await appState.deleteGoal(goal.id);
 
       expect(appState.goals, isEmpty);
@@ -101,7 +135,11 @@ void main() {
     test('무료 사용자는 FreeLimits.maxGoals(3)개까지만 추가 가능하다', () async {
       expect(appState.canAddGoal, true);
       for (var i = 0; i < 3; i++) {
-        await appState.addGoal(title: '목표$i', identityStatement: '나는 $i번째', category: GoalCategory.growth);
+        await appState.addGoal(
+          title: '목표$i',
+          identityStatement: '나는 $i번째',
+          category: GoalCategory.growth,
+        );
       }
       expect(appState.goals, hasLength(3));
       expect(appState.canAddGoal, false); // 한도 도달
@@ -110,7 +148,11 @@ void main() {
     test('프리미엄 사용자는 목표 개수 한도가 없다', () async {
       await appState.setPremiumStatus(true);
       for (var i = 0; i < 5; i++) {
-        await appState.addGoal(title: '목표$i', identityStatement: '나는 $i번째', category: GoalCategory.growth);
+        await appState.addGoal(
+          title: '목표$i',
+          identityStatement: '나는 $i번째',
+          category: GoalCategory.growth,
+        );
       }
       expect(appState.canAddGoal, true);
     });
@@ -154,7 +196,7 @@ void main() {
     test('스트릭이 정확히 7이 되면 streak7 축하 이벤트가 발생한다', () async {
       await appState.addHabit('습관');
       final habit = appState.habits.first;
-      habit.streak = 6; // 이미 6일 연속 달성한 상태를 시뮬레이션
+      habit.completedDates = previousDates(6);
       final result = await appState.toggleHabitToday(habit.id);
       expect(habit.streak, 7);
       expect(result, CelebrationType.streak7);
@@ -163,7 +205,7 @@ void main() {
     test('스트릭이 정확히 30이 되면 streak30 축하 이벤트가 발생한다', () async {
       await appState.addHabit('습관');
       final habit = appState.habits.first;
-      habit.streak = 29;
+      habit.completedDates = previousDates(29);
       final result = await appState.toggleHabitToday(habit.id);
       expect(result, CelebrationType.streak30);
     });
@@ -185,15 +227,33 @@ void main() {
 
   group('저널 & 369 스크립팅', () {
     test('addJournalEntry로 저널을 추가하면 최신 항목이 맨 앞에 온다', () async {
-      await appState.addJournalEntry(type: JournalType.gratitude, content: '첫 감사');
-      await appState.addJournalEntry(type: JournalType.gratitude, content: '두번째 감사');
+      await appState.addJournalEntry(
+        type: JournalType.gratitude,
+        content: '첫 감사',
+      );
+      await appState.addJournalEntry(
+        type: JournalType.gratitude,
+        content: '두번째 감사',
+      );
       expect(appState.journalEntries.first.content, '두번째 감사');
     });
 
     test('scriptCountToday는 오늘 작성한 해당 시간대 스크립팅 개수만 센다', () async {
-      await appState.addJournalEntry(type: JournalType.script, content: '아침1', period: ScriptPeriod.morning.name);
-      await appState.addJournalEntry(type: JournalType.script, content: '아침2', period: ScriptPeriod.morning.name);
-      await appState.addJournalEntry(type: JournalType.script, content: '저녁1', period: ScriptPeriod.evening.name);
+      await appState.addJournalEntry(
+        type: JournalType.script,
+        content: '아침1',
+        period: ScriptPeriod.morning.name,
+      );
+      await appState.addJournalEntry(
+        type: JournalType.script,
+        content: '아침2',
+        period: ScriptPeriod.morning.name,
+      );
+      await appState.addJournalEntry(
+        type: JournalType.script,
+        content: '저녁1',
+        period: ScriptPeriod.evening.name,
+      );
 
       expect(appState.scriptCountToday(ScriptPeriod.morning), 2);
       expect(appState.scriptCountToday(ScriptPeriod.evening), 1);
@@ -204,22 +264,37 @@ void main() {
       expect(appState.scriptingAllCompleteToday, false);
 
       for (var i = 0; i < ScriptPeriod.morning.target; i++) {
-        await appState.addJournalEntry(type: JournalType.script, content: '아침$i', period: ScriptPeriod.morning.name);
+        await appState.addJournalEntry(
+          type: JournalType.script,
+          content: '아침$i',
+          period: ScriptPeriod.morning.name,
+        );
       }
       // 아침만 채웠으므로 아직 전체 완료는 아니다
       expect(appState.scriptingAllCompleteToday, false);
 
       for (var i = 0; i < ScriptPeriod.afternoon.target; i++) {
-        await appState.addJournalEntry(type: JournalType.script, content: '오후$i', period: ScriptPeriod.afternoon.name);
+        await appState.addJournalEntry(
+          type: JournalType.script,
+          content: '오후$i',
+          period: ScriptPeriod.afternoon.name,
+        );
       }
       for (var i = 0; i < ScriptPeriod.evening.target; i++) {
-        await appState.addJournalEntry(type: JournalType.script, content: '저녁$i', period: ScriptPeriod.evening.name);
+        await appState.addJournalEntry(
+          type: JournalType.script,
+          content: '저녁$i',
+          period: ScriptPeriod.evening.name,
+        );
       }
       expect(appState.scriptingAllCompleteToday, true);
     });
 
     test('deleteJournalEntry로 항목을 제거할 수 있다', () async {
-      await appState.addJournalEntry(type: JournalType.gratitude, content: '삭제될 항목');
+      await appState.addJournalEntry(
+        type: JournalType.gratitude,
+        content: '삭제될 항목',
+      );
       final id = appState.journalEntries.first.id;
       await appState.deleteJournalEntry(id);
       expect(appState.journalEntries, isEmpty);
@@ -228,7 +303,11 @@ void main() {
 
   group('비전보드', () {
     test('addVisionItem / deleteVisionItem이 정상 동작한다', () async {
-      await appState.addVisionItem(caption: '풍요로운 삶', isAssetImage: true, imagePath: 'assets/images/vision_examples/wealth.jpg');
+      await appState.addVisionItem(
+        caption: '풍요로운 삶',
+        isAssetImage: true,
+        imagePath: 'assets/images/vision_examples/wealth.jpg',
+      );
       expect(appState.visionItems, hasLength(1));
 
       await appState.deleteVisionItem(appState.visionItems.first.id);
@@ -245,7 +324,10 @@ void main() {
 
   group('우주편지', () {
     test('addLetter 후 markLetterRead로 읽음 처리할 수 있다', () async {
-      await appState.addLetter(content: '미래의 나에게', openDate: DateTime.now().add(const Duration(days: 1)));
+      await appState.addLetter(
+        content: '미래의 나에게',
+        openDate: DateTime.now().add(const Duration(days: 1)),
+      );
       final id = appState.letters.first.id;
       expect(appState.letters.first.isRead, false);
 
@@ -253,12 +335,18 @@ void main() {
       expect(appState.letters.first.isRead, true);
     });
 
-    test('이번 달 편지 개수가 무료 한도(1개)를 넘으면 canWriteLetterThisMonth가 false다', () async {
-      expect(appState.canWriteLetterThisMonth, true);
-      await appState.addLetter(content: '편지1', openDate: DateTime.now().add(const Duration(days: 1)));
-      expect(appState.lettersThisMonth, 1);
-      expect(appState.canWriteLetterThisMonth, false);
-    });
+    test(
+      '이번 달 편지 개수가 무료 한도(1개)를 넘으면 canWriteLetterThisMonth가 false다',
+      () async {
+        expect(appState.canWriteLetterThisMonth, true);
+        await appState.addLetter(
+          content: '편지1',
+          openDate: DateTime.now().add(const Duration(days: 1)),
+        );
+        expect(appState.lettersThisMonth, 1);
+        expect(appState.canWriteLetterThisMonth, false);
+      },
+    );
 
     test('deleteLetter로 편지를 제거할 수 있다', () async {
       await appState.addLetter(content: '삭제될 편지', openDate: DateTime.now());
@@ -274,10 +362,17 @@ void main() {
     });
 
     test('저널/습관/목표 활동이 누적되면 포인트가 증가한다', () async {
-      await appState.addJournalEntry(type: JournalType.gratitude, content: '감사'); // +5pt
+      await appState.addJournalEntry(
+        type: JournalType.gratitude,
+        content: '감사',
+      ); // +5pt
       await appState.addHabit('습관');
       await appState.toggleHabitToday(appState.habits.first.id); // +3pt
-      final goal = await appState.addGoal(title: '목표', identityStatement: '나는 이룬다', category: GoalCategory.growth);
+      final goal = await appState.addGoal(
+        title: '목표',
+        identityStatement: '나는 이룬다',
+        category: GoalCategory.growth,
+      );
       await appState.updateGoalProgress(goal.id, 0.5); // +50pt
 
       expect(appState.totalPoints, 5 + 3 + 50);
@@ -285,11 +380,14 @@ void main() {
   });
 
   group('프리미엄 엔타이틀먼트 연동', () {
-    test('setPremiumStatus는 AppState.isPremium과 EntitlementService를 함께 갱신한다', () async {
-      expect(appState.isPremium, false);
-      await appState.setPremiumStatus(true);
-      expect(appState.isPremium, true);
-      expect(EntitlementService.isPremium, true);
-    });
+    test(
+      'setPremiumStatus는 AppState.isPremium과 EntitlementService를 함께 갱신한다',
+      () async {
+        expect(appState.isPremium, false);
+        await appState.setPremiumStatus(true);
+        expect(appState.isPremium, true);
+        expect(EntitlementService.isPremium, true);
+      },
+    );
   });
 }
